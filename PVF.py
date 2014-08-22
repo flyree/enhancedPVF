@@ -133,7 +133,7 @@ class PVF:
                 opcode = G.edge[edge[0]][edge[1]]['opcode']
         if opcode != "load" and opcode != "store":
             sorted_ops = sorted([i for i in oplist if "index" in G.node[i].keys()], key= lambda pos: G.node[pos]['index'], reverse = True)
-            if opcode != "":
+            if opcode != "" and len(sorted_ops) != 0:
                 stack.append(opcode)
                 stack.extend(sorted_ops)
             #if edge[0] not in visited:
@@ -165,8 +165,8 @@ class PVF:
                             oplist.append(e)
                         else:
                             opcode = e
-                            #if opcode == "sext":
-                            #    print "hhhh"
+                            if opcode == "phi" and len(oplist) == 0:
+                                print "hhhh"
                             v = self.brutalForce(G, oplist, opcode, mapping, localop, new)
                             node = G.successors(oplist[0])[0]
                             mapping[node] = v
@@ -388,6 +388,8 @@ class PVF:
                     res = G.node[node]['len']
                     type = int(res)
                     flag = 0
+                    max = 0
+                    min = 0
                     for item1, item2 in grouper(2, range_mem):
                         if int(item1) <= int(address) and int(address) <= int(item2):
                             removed1 = self.checkRange(int(address), int(item2), int(item1), type)
