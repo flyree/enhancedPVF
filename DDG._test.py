@@ -150,7 +150,7 @@ class DDG:
                             if isint(op) or isfloat(op):
                                 counter += 1
                                 op_new = "constant" + str(counter)
-                                G.add_node(op_new, len=itype, size=1, operand0=op_new,index=ddg_inst.input.index(source), value=int(op))
+                                G.add_node(op_new, len=itype, size=1, operand0=op_new,index=ddg_inst.input.index(source), value=op)
                                 source_node.append(op_new)
                             else:
                                 G.add_node(op, len=itype, size=1, operand0=op,index=ddg_inst.input.index(source))
@@ -202,7 +202,7 @@ class DDG:
                                     if isint(op) or isfloat(op):
                                         counter += 1
                                         op_new = "constant" + str(counter)
-                                        G.add_node(op_new, len=itype, size=1, operand0=op_new, value = int(op),index=ddg_inst.input.index(source))
+                                        G.add_node(op_new, len=itype, size=1, operand0=op_new, value = op,index=ddg_inst.input.index(source))
                                         source_node.append(op_new)
                                     else:
                                         if ddg_inst.opcode == "and" or ddg_inst.opcode == "or" \
@@ -226,7 +226,15 @@ class DDG:
                                     source_node.append(op)
             if ddg_inst.opcode == "getelementptr":
                 if "+" in str(ddg_inst.input[0].type):
-                    G.node[multiInstance[ddg_inst.input[0].operand]]['realTy'] = ddg_inst.input[0].type.split("+")[1]
+                    new_split = ddg_inst.input[0].type.split("+")
+                    if len(new_split) > 2:
+                        G.node[multiInstance[ddg_inst.input[0].operand]]['realTy'] = new_split[1]
+                        if isint(new_split[2]) or isfloat(new_split[2]) :
+                            G.node[multiInstance[ddg_inst.input[0].operand]]['elementTy'] = new_split[2]
+                        else:
+                            G.node[multiInstance[ddg_inst.input[0].operand]]['structName'] = new_split[2]
+                    else:
+                        G.node[multiInstance[ddg_inst.input[0].operand]]['realTy'] = new_split[1]
 
             if flag_phi == 1:
                 index = max(phiNodeCheck.keys())
@@ -304,8 +312,6 @@ class DDG:
                                 if sop in multiInstance.keys():
                                     sop = multiInstance[sop]
                                 G.add_node(op, len=itype, size=1, operand0=op, pre=sop, value = dest.value)
-                                if sop == ".omp_microtask._%.addr2" and op == ".omp_microtask._%arg3":
-                                    print "here"
                             else:
                                 G.add_node(op, len=itype, size=1, operand0=op, value = dest.value)
                             dest_node.append(op)
@@ -393,8 +399,12 @@ class DDG:
         #G.node['.omp_microtask._%2']['value'] = 140733601624680
         #G.node['.omp_microtask._@wall']['value'] = 6328592
         #G.node['.omp_microtask._@cols']['value'] = 6328580
-        G.node['.omp_microtask._%2']['value'] = 140736750335664
-        G.node['.omp_microtask._@no_of_nodes']['value'] = 6320352
+        #G.node['.omp_microtask._%2']['value'] = 140736750335664
+        #G.node['.omp_microtask._@no_of_nodes']['value'] = 6320352
+        G.node['.omp_microtask._%0']['value'] = 139702011644672
+        G.node['.omp_microtask._%2']['value'] = 140737223074288
+        G.node['.omp_microtask.1_%2']['value'] = 140737223074184
+        G.node['.omp_microtask.1_%0']['value'] = 139702011644672
         return G
 
 

@@ -83,8 +83,12 @@ class AbstractInst:
                             type = int(res[0].split("+")[1])
                             if opcode == "getelementptr":
                                 if "GepType+" in item:
-                                    res = re.findall("GepType\+\d+", item)
-                                    type = str(type)+"+"+res[0].split("+")[1]
+                                    res = re.findall("GepType\+\d+\+?.*", item)
+                                    new_res = res[0].split("+")
+                                    if len(new_res) > 2:
+                                        type = str(type)+"+"+new_res[1]+"+"+new_res[2]
+                                    else:
+                                        type = str(type)+"+"+new_res[1]
                             value = ""
                             operand = op.split(" ")[1]
                             operand = operand.lstrip(" ")
@@ -109,8 +113,12 @@ class AbstractInst:
                             type = int(res[0].split("+")[1])
                             if opcode == "getelementptr":
                                 if "GepType+" in item:
-                                    res = re.findall("GepType\+\d+", item)
-                                    type = str(type)+"+"+res[0].split("+")[1]
+                                    res = re.findall("GepType\+\d+\+?.*", item)
+                                    new_res = res[0].split("+")
+                                    if len(new_res) > 2:
+                                        type = str(type)+"+"+new_res[1]+"+"+new_res[2]
+                                    else:
+                                        type = str(type)+"+"+new_res[1]
                             temp = ""
                             value = ""
                             if isint(operand) or isfloat(operand):

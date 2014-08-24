@@ -6,28 +6,31 @@
 #outputDataSet = ['.omp_microtask._%arrayidx46']
 #tid = "18608"
 #Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
+#gepsize = 4
 
 ### bfs
-IRpath = "/Users/bofang/PycharmProjects/PVF/bfs/bfs.ll"
-indexFilePath = "/Users/bofang/PycharmProjects/PVF/bfs/bfs_mapping"
-tracePath = "/Users/bofang/PycharmProjects/PVF/bfs/llfi.stat.trace.txt.prof.1"
-outputDataSet = ['.omp_microtask._%arrayidx40']
-Outbound = ['.omp_microtask._%2','.omp_microtask._@no_of_nodes']
-tid = "23923"
+#IRpath = "/Users/bofang/PycharmProjects/PVF/bfs/bfs.ll"
+#indexFilePath = "/Users/bofang/PycharmProjects/PVF/bfs/bfs_mapping"
+#tracePath = "/Users/bofang/PycharmProjects/PVF/bfs/llfi.stat.trace.txt.prof.1"
+#outputDataSet = ['.omp_microtask._%arrayidx40']
+#Outbound = ['.omp_microtask._%2','.omp_microtask._@no_of_nodes']
+#tid = "23923"
 
 ### hotspot
 #IRpath = "/Users/bofang/PycharmProjects/PVF/hotspot/hotspot.ll"
 #indexFilePath = "/Users/bofang/PycharmProjects/PVF/hotspot/hotspot_mapping"
 #tracePath = "/Users/bofang/PycharmProjects/PVF/hotspot/llfi.stat.trace.txt.prof.1"
 #outputDataSet = ['.omp_microtask.1_%arrayidx22']
-#tid = "5142"
+#Outbound = ['.omp_microtask._%0','.omp_microtask._%2', '.omp_microtask.1_%0','.omp_microtask.1_%2']
+#tid = "2909"
+#gepsize = 8
 
 ### reduction
-#IRpath = "/Users/bofang/PycharmProjects/PVF/reduction/reduction.ll"
-#indexFilePath = "/Users/bofang/PycharmProjects/PVF/reduction/reduction_mapping"
-#tracePath = "/Users/bofang/PycharmProjects/PVF/reduction/llfi.stat.trace.txt.prof.1"
-#outputDataSet = ['.omp_microtask._%arrayidx']
-#tid = "8819"
+IRpath = "/Users/bofang/PycharmProjects/PVF/reduction/reduction.ll"
+indexFilePath = "/Users/bofang/PycharmProjects/PVF/reduction/reduction_mapping"
+tracePath = "/Users/bofang/PycharmProjects/PVF/reduction/llfi.stat.trace.txt.prof.1"
+outputDataSet = ['.omp_microtask._%arrayidx']
+tid = "8819"
 
 #-------------
 # instructions

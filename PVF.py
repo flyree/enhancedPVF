@@ -202,10 +202,10 @@ class PVF:
                 size = G.node[replay[0]]['realTy']
                 values[1] = values[1]*int(size)
                 #size = G.node[replay[2]]['len']
-                values[2] = values[2]*4
+                values[2] = values[2]*int(config.gepsize)
             if len(replay) == 2:
                 #size = G.node[replay[1]]['len']
-                values[1] = values[1]*4
+                values[1] = values[1]*int(config.gepsize)
         ret = self.calculateCrashInst(values, opcode)
         return ret
 
@@ -371,8 +371,15 @@ class PVF:
                                     removed += removed1
                                     break
                         #counter += 1
+                        if removed > 10:
+                            print final
+                            print max
+                            print min
+                            print stack
                         stack = []
+
                         print removed
+
                         print "####"
                         #    else:
                         #        if G.edge[edge[0]][edge[1]]['opcode'] in config.pointerInst:
@@ -419,6 +426,11 @@ class PVF:
                                 removed += removed1
                                 break
                     #counter += 1
+                    if removed > 10:
+                            print final
+                            print max
+                            print min
+                            print stack
                     print removed
                     print "####"
                     stack = []
