@@ -6,6 +6,8 @@ import networkx as nx
 import copy
 from itertools import izip_longest
 import setting as config
+import InstructionAbstraction
+import sets
 
 aceBits = 0
 crashBits = 0
@@ -79,7 +81,7 @@ class PVF:
         for e in subG.edges_iter():
             if subG.edge[e[0]][e[1]]['opcode'] in config.pointerInst:
                 counter += 1
-        print counter
+        #print counter
         self.simplePVF(subG)
         #visited = self.traverse4PVF(subG, "bo%2", targetList)
         #for item in subG.nodes():
@@ -149,6 +151,8 @@ class PVF:
         localstack = opstack
         popstack = copy.deepcopy(opstack)
         counter = 0
+        if len(opstack) == 5:
+            print "here"
         for localop in localstack:
             if localop not in config.memoryInst and localop not in config.bitwiseInst and localop not in config.computationInst and localop not in config.castInst and localop not in config.pointerInst and localop not in config.otherInst:
                 original = int(G.node[localop]['value'])
@@ -165,12 +169,22 @@ class PVF:
                             oplist.append(e)
                         else:
                             opcode = e
-                            if opcode == "phi" and len(oplist) == 0:
-                                print "hhhh"
+                            #if opcode == "getelementptr":
+                            #    print "hhhh"
                             v = self.brutalForce(G, oplist, opcode, mapping, localop, new)
-                            node = G.successors(oplist[0])[0]
-                            mapping[node] = v
-                            temp = v
+                            node = ""
+                            if len(oplist) == 1:
+                                node = G.successors(oplist[0])[0]
+                            else:
+                                snode = set(G.successors(oplist[0])).intersection(set(G.successors(oplist[1])))
+                                node = snode.pop()
+                            if localop == node:
+                                mapping[node] = new
+                            else:
+                                mapping[node] = v
+                            temp = mapping[node]
+                            if temp == 140733601624704:
+                                print "heree"
                             oplist = []
                             opcode = ""
                             counter += 1
@@ -184,6 +198,8 @@ class PVF:
     def brutalForce(self, G, replay, opcode, mapping, localop, new):
 
         values = []
+        fm = InstructionAbstraction.FunctionMapping(config.IRpath)
+        structMap = fm.extractStruct()
         for op in replay:
             value = 0
             if op in mapping.keys():
@@ -202,10 +218,25 @@ class PVF:
                 size = G.node[replay[0]]['realTy']
                 values[1] = values[1]*int(size)
                 #size = G.node[replay[2]]['len']
-                values[2] = values[2]*int(config.gepsize)
+                if "structName" in G.node[replay[0]].keys():
+                    structname = G.node[replay[0]]['structName']
+                    sizelist = structMap["%"+structname]
+                    t = 0
+                    if values[2] >= len(sizelist):
+                        for i in range(len(sizelist)):
+                            t += sizelist[i]
+                        t += (values[2]-len(sizelist) +1)*4
+                    else:
+                        for i in range(len(sizelist)):
+                            t += sizelist[i]
+                    values[2] = int(t/8)
+                if "elementTy" in G.node[replay[0]].keys():
+                    element = G.node[replay[0]]['elementTy']
+                    values[2] = values[2]*int(int(element)/8)
             if len(replay) == 2:
-                #size = G.node[replay[1]]['len']
-                values[1] = values[1]*int(config.gepsize)
+                if "realTy" in G.node[replay[0]].keys():
+                    size = G.node[replay[0]]['realTy']
+                    values[1] = values[1]*int(int(size)/8)
         ret = self.calculateCrashInst(values, opcode)
         return ret
 
@@ -225,18 +256,19 @@ class PVF:
             assert(values[1] != 0)
             return values[0]/values[1]
         if opcode == "sext":
-            bitstream = bin(values[0])
-            sign = ""
-            if bitstream.startswith("-"):
-                bitstream = bitstream.lstrip("-")
-                sign = "-"
-            if bitstream.startswith("0b"):
-                bitstream = bitstream.lstrip("0b")
-            if len(bitstream) != config.OSbits:
-                mis = 64 - len(bitstream)
-                for i in range(mis):
-                    bitstream = '0'+bitstream
-            return int(sign+"0b"+bitstream, 2)
+            #bitstream = bin(values[0])
+            #sign = ""
+            #if bitstream.startswith("-"):
+            #    bitstream = bitstream.lstrip("-")
+            #    sign = "-"
+            #if bitstream.startswith("0b"):
+            #    bitstream = bitstream.lstrip("0b")
+            #if len(bitstream) != config.OSbits:
+            #    mis = 64 - len(bitstream)
+            #    for i in range(mis):
+             #       bitstream = '0'+bitstream
+            #return int(sign+"0b"+bitstream, 2)
+            return values[0]
         if opcode == "phi":
             return values[0]
         if opcode == "srem":
@@ -248,18 +280,19 @@ class PVF:
         if opcode == "getelementptr":
             return sum(values)
         if opcode == "bitcast":
-            bitstream = bin(values[0])
-            sign = ""
-            if bitstream.startswith("-"):
-                bitstream = bitstream.lstrip("-")
-                sign = "-"
-            if bitstream.startswith("0b"):
-                bitstream = bitstream.lstrip("0b")
-            if len(bitstream) != config.OSbits:
-                mis = 64 - len(bitstream)
-                for i in range(mis):
-                    bitstream = '0'+bitstream
-            return int(sign+"0b"+bitstream, 2)
+            #bitstream = bin(values[0])
+            #sign = ""
+            #if bitstream.startswith("-"):
+            #    bitstream = bitstream.lstrip("-")
+            #    sign = "-"
+            #if bitstream.startswith("0b"):
+            #    bitstream = bitstream.lstrip("0b")
+            #if len(bitstream) != config.OSbits:
+            #    mis = 64 - len(bitstream)
+            #    for i in range(mis):
+            #        bitstream = '0'+bitstream
+            #return int(sign+"0b"+bitstream, 2)
+            return values[0]
 
 
 
@@ -271,24 +304,31 @@ class PVF:
 
         :rtype : integer
         """
-        bitstream = bin(min)
-        if bitstream.startswith("0b"):
-            bitstream = bitstream.lstrip("0b")
-        if len(bitstream) != config.OSbits:
-            mis = 64 - len(bitstream)
-            for i in range(mis):
-                bitstream = '0'+bitstream
-        assert(len(bitstream) == config.OSbits)
-        flag = 0
-        count = 0
-        for pos, bit in enumerate(bitstream):
-            if flag == 1:
-                if bit == "1":
-                    count += 1
-            if bit == "1" and flag == 0:
-                flag = 1
-                count += pos
-        return count
+        #bitstream = bin(min)
+        #if bitstream.startswith("0b"):
+        #    bitstream = bitstream.lstrip("0b")
+        #if len(bitstream) != config.OSbits:
+        #    mis = 64 - len(bitstream)
+        #    for i in range(mis):
+        #        bitstream = '0'+bitstream
+        #assert(len(bitstream) == config.OSbits)
+        #flag = 0
+        #count = 0
+        #for pos, bit in enumerate(bitstream):
+        #    if flag == 1:
+        #       if bit == "1":
+        #            count += 1
+        #    if bit == "1" and flag == 0:
+        #        flag = 1
+        #        count += pos
+        #return
+        counter = 0
+        for i in range(type):
+            mask = (1 << i)
+            address = address ^ mask
+            if address > max or address < min:
+                counter += 1
+        return counter
 
     def instructionPVF(self, G, opcode, oplist, node):
         global crashBits
@@ -302,7 +342,7 @@ class PVF:
                 bb += int(res)
             #res = G.node[node]['len']
             #b += int(res)
-        if opcode in config.bitwiseInst:
+        elif opcode in config.bitwiseInst:
             # if opcode == "and":
             #     res = re.findall('\d+', G.node[oplist[0]]['len'])
             #     size = int(res[0])
@@ -324,14 +364,14 @@ class PVF:
                 bb += int(res)
             #res = G.node[node]['len']
             #b += int(res)
-        if opcode in config.pointerInst:
+        elif opcode in config.pointerInst:
             for op in oplist:
                 res = G.node[op]['len']
                 bb += int(res)
             #res = G.node[node]['len']
 
             #b += int(res)
-        if opcode in config.memoryInst:
+        elif opcode in config.memoryInst:
             if opcode == "load":
                 res = 0
                 for op in oplist:
@@ -343,6 +383,7 @@ class PVF:
                         type = int(res)
                         max = 0
                         min = 0
+                        removed1 = 0
                         for item1, item2 in grouper(2, range_mem):
                             if int(item1) <= int(address) and int(address) <= int(item2):
                                 removed1 = self.checkRange(int(address), int(item2), int(item1), type)
@@ -371,16 +412,16 @@ class PVF:
                                     removed += removed1
                                     break
                         #counter += 1
-                        if removed > 10:
-                            print final
-                            print max
-                            print min
-                            print stack
+                        #if removed > 10:
+                        #    print final
+                        #    print max
+                        #    print min
+                        #    print stack
                         stack = []
 
-                        print removed
+                        #print removed
 
-                        print "####"
+                        #print "####"
                         #    else:
                         #        if G.edge[edge[0]][edge[1]]['opcode'] in config.pointerInst:
                         #            removed *= 2
@@ -397,6 +438,7 @@ class PVF:
                     flag = 0
                     max = 0
                     min = 0
+                    removed1 = 0
                     for item1, item2 in grouper(2, range_mem):
                         if int(item1) <= int(address) and int(address) <= int(item2):
                             removed1 = self.checkRange(int(address), int(item2), int(item1), type)
@@ -426,13 +468,13 @@ class PVF:
                                 removed += removed1
                                 break
                     #counter += 1
-                    if removed > 10:
-                            print final
-                            print max
-                            print min
-                            print stack
-                    print removed
-                    print "####"
+                    #if removed > 10:
+                    #        print final
+                    #        print max
+                    #        print min
+                    #        print stack
+                    #print removed
+                    #print "####"
                     stack = []
                     #        else:
                     #            if G.edge[edge[0]][edge[1]]['opcode'] in config.pointerInst:
@@ -441,18 +483,22 @@ class PVF:
                     #        if flag == 1:
                     #            break
             #removed = 0
-        if opcode in config.castInst:
+        elif opcode in config.castInst:
             for op in oplist:
                 res = G.node[op]['len']
                 bb += int(res)
             #res = G.node[node]['len']
             #b += int(res)
-        if opcode in config.otherInst:
+        elif opcode in config.otherInst:
             for op in oplist:
                 res = G.node[op]['len']
                 bb += int(res)
             #res = G.node[node]['len']
             #b += int(res)
+        else:
+            #print opcode
+            #print "WRONG"
+            pass
         bb -= removed
         #print b
         #print "######"

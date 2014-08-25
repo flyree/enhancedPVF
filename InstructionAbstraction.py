@@ -5,6 +5,7 @@ import re
 from collections import namedtuple
 import setting as config
 import copy
+import math
 
 def isfloat(x):
     try:
@@ -276,6 +277,35 @@ class FunctionMapping:
                     if "%" in arg:
                         func[funcname].append(arg)
         return func
+
+    def extractStruct(self):
+        # %struct.anon = type { i32*, i32*, [48 x float]*, [48 x float]*, [48 x float]* }
+        struct = {}
+        for line in self.ir:
+            if "struct" in line and "type" in line:
+                line = line.rstrip("\n")
+                str1 = line.split(" = ")
+                name = str1[0]
+                struct[name] = {}
+                str2 = str1[1].lstrip("type { ").rstrip(" }")
+                fields = str2.split(",")
+                for idx, item in enumerate(fields):
+                    type = 0
+                    item1 = item
+                    item1 = item1.lstrip(" ").rstrip(" ")
+                    if "*" in item1:
+                        type = config.OSbits
+                    else:
+                        if "i" in item1:
+                            res = re.findall("[-+]?[0-9]*\.?[0-9]+",item1)
+                            type = int(math.ceil(int(res[0]) / 4.0)) * 4
+                        if "float" in item1:
+                            type = 32
+                        if "double" in item1:
+                            type = 64
+                    struct[name][idx] = type
+        return struct
+
 
 
 

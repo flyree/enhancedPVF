@@ -1,11 +1,11 @@
 
 #### pathfinder
-#IRpath = "/Users/bofang/PycharmProjects/PVF/pathfinder/pathfinder.ll"
-#indexFilePath = "/Users/bofang/PycharmProjects/PVF/pathfinder/pathfinder_mapping"
-#tracePath = "/Users/bofang/PycharmProjects/PVF/pathfinder/llfi.stat.trace.txt.prof.1"
-#outputDataSet = ['.omp_microtask._%arrayidx46']
-#tid = "18608"
-#Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
+IRpath = "/Users/bofang/PycharmProjects/PVF/pathfinder/pathfinder.ll"
+indexFilePath = "/Users/bofang/PycharmProjects/PVF/pathfinder/pathfinder_mapping"
+tracePath = "/Users/bofang/PycharmProjects/PVF/pathfinder/llfi.stat.trace.txt.prof.1"
+outputDataSet = ['.omp_microtask._%arrayidx46']
+tid = "18608"
+Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
 #gepsize = 4
 
 ### bfs
@@ -26,11 +26,11 @@
 #gepsize = 8
 
 ### reduction
-IRpath = "/Users/bofang/PycharmProjects/PVF/reduction/reduction.ll"
-indexFilePath = "/Users/bofang/PycharmProjects/PVF/reduction/reduction_mapping"
-tracePath = "/Users/bofang/PycharmProjects/PVF/reduction/llfi.stat.trace.txt.prof.1"
-outputDataSet = ['.omp_microtask._%arrayidx']
-tid = "8819"
+#IRpath = "/Users/bofang/PycharmProjects/PVF/reduction/reduction.ll"
+#indexFilePath = "/Users/bofang/PycharmProjects/PVF/reduction/reduction_mapping"
+#tracePath = "/Users/bofang/PycharmProjects/PVF/reduction/llfi.stat.trace.txt.prof.1"
+#outputDataSet = ['.omp_microtask._%arrayidx']
+#tid = "8819"
 
 #-------------
 # instructions

@@ -397,14 +397,14 @@ class DDG:
         print totalbits
         # have to hard-code the value of some nodes which are not assigned in the openmp part
         #G.node['.omp_microtask._%2']['value'] = 140733601624680
-        #G.node['.omp_microtask._@wall']['value'] = 6328592
-        #G.node['.omp_microtask._@cols']['value'] = 6328580
+        G.node['.omp_microtask._@wall']['value'] = 6328592
+        G.node['.omp_microtask._@cols']['value'] = 6328580
         #G.node['.omp_microtask._%2']['value'] = 140736750335664
         #G.node['.omp_microtask._@no_of_nodes']['value'] = 6320352
-        G.node['.omp_microtask._%0']['value'] = 139702011644672
-        G.node['.omp_microtask._%2']['value'] = 140737223074288
-        G.node['.omp_microtask.1_%2']['value'] = 140737223074184
-        G.node['.omp_microtask.1_%0']['value'] = 139702011644672
+        #G.node['.omp_microtask._%0']['value'] = 139702011644672
+        #G.node['.omp_microtask._%2']['value'] = 140737223074288
+        #G.node['.omp_microtask.1_%2']['value'] = 140737223074184
+        #G.node['.omp_microtask.1_%0']['value'] = 139702011644672
         return G
 
 
