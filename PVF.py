@@ -25,6 +25,9 @@ class PVF:
         self.trace = trace[0]
         self.remap = trace[1]
         self.memory = trace[2]
+        fm = InstructionAbstraction.FunctionMapping(config.IRpath)
+        structMap = fm.extractStruct()
+        self.structMap = structMap
 
 
     def computePVF(self, targetList):
@@ -149,7 +152,6 @@ class PVF:
         final = []
         temp = 0
         localstack = opstack
-        popstack = copy.deepcopy(opstack)
         counter = 0
         if len(opstack) == 5:
             print "here"
@@ -163,8 +165,7 @@ class PVF:
                     mapping = {}
                     oplist = []
                     opcode = ""
-                    while len(popstack) != 0:
-                        e = popstack.pop()
+                    for e in reversed(opstack):
                         if e not in config.memoryInst and e not in config.bitwiseInst and e not in config.computationInst and e not in config.castInst and e not in config.pointerInst and e not in config.otherInst:
                             oplist.append(e)
                         else:
@@ -183,13 +184,10 @@ class PVF:
                             else:
                                 mapping[node] = v
                             temp = mapping[node]
-                            if temp == 140733601624704:
-                                print "heree"
                             oplist = []
                             opcode = ""
                             counter += 1
                     final.append(temp)
-                    popstack = copy.deepcopy(opstack)
         #print counter
         print len(final)
         return final
@@ -198,8 +196,6 @@ class PVF:
     def brutalForce(self, G, replay, opcode, mapping, localop, new):
 
         values = []
-        fm = InstructionAbstraction.FunctionMapping(config.IRpath)
-        structMap = fm.extractStruct()
         for op in replay:
             value = 0
             if op in mapping.keys():
@@ -220,7 +216,7 @@ class PVF:
                 #size = G.node[replay[2]]['len']
                 if "structName" in G.node[replay[0]].keys():
                     structname = G.node[replay[0]]['structName']
-                    sizelist = structMap["%"+structname]
+                    sizelist = self.structMap["%"+structname]
                     t = 0
                     if values[2] >= len(sizelist):
                         for i in range(len(sizelist)):
