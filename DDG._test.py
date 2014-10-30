@@ -1,12 +1,6 @@
-import os
 import sys
-import re
-import random
-from networkx import graphviz_layout
-
 import InstructionAbstraction
 import networkx as nx
-import matplotlib.pyplot as plt
 import setting as config
 import PVF as pvf
 from bisect import bisect_left
@@ -14,6 +8,8 @@ from bisect import bisect_left
 sys.setrecursionlimit(10000)
 counter = 0
 phiNodeCheck = {}
+indexMap = {}
+
 
 def isfloat(x):
     try:
@@ -77,9 +73,9 @@ class DDG:
             # print ddg_inst.output[0]
             for source in ddg_inst.input:
                 op = source.operand
-                if op in rename_mapping.keys():
+                if op in rename_mapping:
                     op = rename_mapping[op]
-                if op not in multiInstance.keys():
+                if op not in multiInstance:
                     multiInstance[op] = op
                 else:
                     op = multiInstance[op]
@@ -95,29 +91,38 @@ class DDG:
                     itype = config.OSbits
                 else:
                     itype = ty1
-                if ddg_inst.opcode not in config.memoryInst:
-                    if ddg_inst.funcname == "":
+                if ddg_inst.opcode != 'load' and ddg_inst.opcode != 'store':
+                    #if ddg_inst.funcname == "":
+                    if ddg_inst.opcode == "phi":
+                        pass
+                    else:
                         res = itype
                         instbits += int(res)
                         #print ddg_inst.opcode
                         #print itype
                         #print "#########"
-                    else:
-                        if ddg_inst.funcname not in config.intrinsics:
-                            res = itype
-                            instbits += int(res)
-
+                    #else:
+                    #    if ddg_inst.funcname not in config.intrinsics:
+                    #        res = itype
+                    #        instbits += int(res)
+                #print itype
+                #if itype == 1:
+                #    print "here"
+                else:
+                     if ddg_inst.opcode == "load":
+                        res = itype
+                        instbits += int(res)
                 if ddg_inst.address != -1:
                     if ddg_inst.opcode == "load":
                         address = ddg_inst.address
-                        if address not in multiInstance.keys():
+                        if address not in multiInstance:
                             multiInstance[address] = address
                         else:
                             address = multiInstance[address]
-                        if ddg_inst.address not in G.nodes():
+                        if ddg_inst.address not in G:
                             index = self.remap[idx]
-                            limit = binary_search(sorted(self.memory.keys()), index)
-                            G.add_node(address, len=itype, size=1, operand0=op, mem=limit, index=ddg_inst.input.index(source))
+                            #limit = binary_search(sorted(self.memory), index)
+                            G.add_node(address, len=itype, size=1, operand0=op, mem=index, index=ddg_inst.input.index(source))
                             G.add_node(op, len=itype,size=1, operand0=op,index=ddg_inst.input.index(source))
                             G.add_edge(address, op, opcode='virtual')
                             G.add_edge(op, address, opcode='virtual')
@@ -133,7 +138,7 @@ class DDG:
                             G.add_edge(op, address, opcode='virtual')
                             # addr_op_map[ddg_inst.address] = op
                     elif ddg_inst.opcode == "call":
-                        if ddg_inst.funcname in funcMap.keys():
+                        if ddg_inst.funcname in funcMap:
                             op_rep = funcMap[ddg_inst.funcname][ddg_inst.index(op) + 1]
                             rename_mapping[op_rep] = op
                     else:
@@ -146,21 +151,24 @@ class DDG:
                         #            flag = 1
                         #            break
                         #if flag == 0:
-                        if op not in G.nodes():
+                        if op not in G:
                             if isint(op) or isfloat(op):
-                                counter += 1
-                                op_new = "constant" + str(counter)
+                                op_new = "constant" + str(idx)+"+"+str(ddg_inst.input.index(source))
                                 G.add_node(op_new, len=itype, size=1, operand0=op_new,index=ddg_inst.input.index(source), value=op)
                                 source_node.append(op_new)
+                                #instbits -= itype
                             else:
                                 G.add_node(op, len=itype, size=1, operand0=op,index=ddg_inst.input.index(source))
                                 source_node.append(op)
                         else:
-                            G.node[op]['index'] = ddg_inst.input.index(source)
+                            if 'index' not in G.node[op].keys():
+                                G.node[op]['index'] = ddg_inst.input.index(source)
+                            else:
+                                print "here"
                             source_node.append(op)
                 else:
                     if ddg_inst.opcode == "call":
-                        if ddg_inst.funcname in funcMap.keys():
+                        if ddg_inst.funcname in funcMap:
                             op_rep = funcMap[ddg_inst.funcname][ddg_inst.index(op) + 1]
                             rename_mapping[op_rep] = op
                         if "memcpy" in ddg_inst.funcname:
@@ -180,7 +188,7 @@ class DDG:
                             source_address = memcpyRec[self.remap[idx]][1]
                             length = memcpyRec[self.remap[idx]][2]
                             for i in range(int(length)):
-                                if str(int(source_address) + i) in G.nodes():
+                                if str(int(source_address) + i) in G:
                                     size = int(G.node[str(int(source_address) + i)]['size']) + 1
                                     G.node[str(int(source_address) + i )]['size'] = size
                                     G.node[str(int(source_address) + i )]['operand' + str(size - 1)] = op
@@ -198,12 +206,12 @@ class DDG:
                                             flag_phi = 1
                                             break
                             else:
-                                if op not in G.nodes():
+                                if op not in G:
                                     if isint(op) or isfloat(op):
-                                        counter += 1
-                                        op_new = "constant" + str(counter)
+                                        op_new = "constant" + str(idx)+"+"+str(ddg_inst.input.index(source))
                                         G.add_node(op_new, len=itype, size=1, operand0=op_new, value = op,index=ddg_inst.input.index(source))
                                         source_node.append(op_new)
+                                        #instbits -= itype
                                     else:
                                         if ddg_inst.opcode == "and" or ddg_inst.opcode == "or" \
                                                 or ddg_inst.opcode == "shl" or \
@@ -222,7 +230,6 @@ class DDG:
                             #                phiNodeCheck[i] = op
                             #                flag_phi = 1
                                 else:
-                                    G.node[op]['index'] = ddg_inst.input.index(source)
                                     source_node.append(op)
             if ddg_inst.opcode == "getelementptr":
                 if "+" in str(ddg_inst.input[0].type):
@@ -230,6 +237,9 @@ class DDG:
                     if len(new_split) > 2:
                         G.node[multiInstance[ddg_inst.input[0].operand]]['realTy'] = new_split[1]
                         if isint(new_split[2]) or isfloat(new_split[2]) :
+                            if new_split[2] == '0':
+                                #just for now, cannot handle 2D array
+                                new_split[2] = 64
                             G.node[multiInstance[ddg_inst.input[0].operand]]['elementTy'] = new_split[2]
                         else:
                             G.node[multiInstance[ddg_inst.input[0].operand]]['structName'] = new_split[2]
@@ -237,8 +247,8 @@ class DDG:
                         G.node[multiInstance[ddg_inst.input[0].operand]]['realTy'] = new_split[1]
 
             if flag_phi == 1:
-                index = max(phiNodeCheck.keys())
-                if phiNodeCheck[index] not in G.nodes():
+                index = max(phiNodeCheck)
+                if phiNodeCheck[index] not in G:
                     for source in ddg_inst.input:
                         if source.operand == phiNodeCheck[index]:
                             pos = ddg_inst.input.index(source)
@@ -251,54 +261,96 @@ class DDG:
 
             for dest in ddg_inst.output:
                 op = dest.operand
-                if op in rename_mapping.keys():
+                if op in rename_mapping:
                     op = rename_mapping[op]
-                if op not in multiInstance.keys():
+                if op not in multiInstance:
                     multiInstance[op] = op
                 else:
                     op = multiInstance[op]
                 itype = 0
-                if dest.type == 0:
+                ty1 = 0
+                ty2 = 0
+                if "+" in str(dest.type):
+                        ty1 = source.type.split("+")[0]
+                        ty2 = source.type.split("+")[1]
+                else:
+                    ty1 = dest.type
+                if int(ty1) == 0:
                     itype = config.OSbits
                 else:
-                    itype = dest.type
+                    itype = ty1
+                if ddg_inst.opcode == "store":
+                   # if ddg_inst.funcname == "":
+                        res = itype
+                        instbits += int(res)
+                        #print ddg_inst.opcode
+                        #print itype
+                        #print "#########"
+                   # else:
+                   #     if ddg_inst.funcname not in config.intrinsics:
+                   #         res = itype
+                   #        instbits += int(res)
                 #if ddg_inst.opcode not in config.memoryInst:
                 #    res = itype
                 #    instbits += int(res)
                 if ddg_inst.address != -1:
                     if ddg_inst.opcode == "store" or ddg_inst.opcode == "alloca":
                         address = ddg_inst.address
-                        if address not in multiInstance.keys():
+                        if address not in multiInstance:
                             multiInstance[address] = address
                         else:
                             address = multiInstance[address]
-                        if address not in G.nodes():
+                        if address not in G:
                             index = self.remap[idx]
-                            limit = binary_search(sorted(self.memory.keys()), index)
-                            G.add_node(address, len=itype, size=1, operand0=op, mem=limit)
+                            #limit = binary_search(sorted(self.memory), index)
+                            G.add_node(address, len=itype, size=1, operand0=op, mem=index)
                             dest_node.append(address)
-                            G.add_node(op, len=itype,size=1, operand0=op)
-                            G.add_edge(address, op, opcode='virtual')
-                            G.add_edge(op, address, opcode='virtual')
+                            sop =ddg_inst.input[0].operand
+                            if sop in multiInstance:
+                                sop = multiInstance[sop]
+                            op1 = op
+                            #if op in G:
+                            #    op = op.split("+")[0]
+                            #    op1 = op+"+"+str(counter)
+                            #    multiInstance[op] = op1
+                            if op1 in G:
+                                if "pre" in G.node[op1]:
+                                    G.node[op1]['pre'].append(sop)
+                            else:
+                                G.add_node(op1, len=itype,size=1, operand0=op1, pre=[sop], value=ddg_inst.address)
+                            G.add_edge(address, op1, opcode='virtual')
+                            G.add_edge(op1, address, opcode='virtual')
                         else:
                             counter += 1
                             address = address.split("+")[0]
                             address1 = address+"+"+str(counter)
                             multiInstance[address] = address1
                             index = self.remap[idx]
-                            limit = binary_search(sorted(self.memory.keys()),index)
-                            G.add_node(address1, len=itype, size=1, operand0=op, mem=limit)
+                            #limit = binary_search(sorted(self.memory),index)
+                            G.add_node(address1, len=itype, size=1, operand0=op, mem=index)
                             dest_node.append(address1)
-                            G.add_node(op, len=itype, size=1, operand0=op)
-                            G.add_edge(address1, op, opcode='virtual')
-                            G.add_edge(op, address1, opcode='virtual')
+                            sop =ddg_inst.input[0].operand
+                            if sop in multiInstance:
+                                sop = multiInstance[sop]
+                            op1 = op
+                            #if op in G:
+                            #    op = op.split("+")[0]
+                            #    op1 = op+"+"+str(counter)
+                            #    multiInstance[op] = op1
+                            if op1 in G:
+                                if "pre" in G.node[op1]:
+                                    G.node[op1]['pre'].append(sop)
+                            else:
+                                G.add_node(op1, len=itype, size=1, operand0=op1, pre=[sop],value=ddg_inst.address)
+                            G.add_edge(address1, op1, opcode='virtual')
+                            G.add_edge(op1, address1, opcode='virtual')
                             # addr_op_map[ddg_inst.address] = op
                     elif ddg_inst.opcode == "call":
-                        if ddg_inst.funcname in funcMap.keys():
+                        if ddg_inst.funcname in funcMap:
                             op_rep = funcMap[ddg_inst.funcname][ddg_inst.index(op) + 1]
                             rename_mapping[op_rep] = op
                     else:
-                        if op not in G.nodes():
+                        if op not in G:
                             #flag = 0
                             #for node in G.nodes():
                             #    for i in range(int(G.node[node]['size'])):
@@ -309,7 +361,7 @@ class DDG:
                             #if flag == 0:
                             if ddg_inst.opcode == "load":
                                 sop =ddg_inst.input[0].operand
-                                if sop in multiInstance.keys():
+                                if sop in multiInstance:
                                     sop = multiInstance[sop]
                                 G.add_node(op, len=itype, size=1, operand0=op, pre=sop, value = dest.value)
                             else:
@@ -322,19 +374,19 @@ class DDG:
                             multiInstance[op] = op1
                             if ddg_inst.opcode == "load":
                                 sop =ddg_inst.input[0].operand
-                                if sop in multiInstance.keys():
+                                if sop in multiInstance:
                                     sop = multiInstance[sop]
                                 G.add_node(op1, len=itype, size=1, operand0=op1, pre=sop, value = dest.value)
                             else:
                                 G.add_node(op1, len=itype, size=1, operand0=op1, value = dest.value)
                             dest_node.append(op1)
                 else:
-                    if op not in multiInstance.keys():
+                    if op not in multiInstance:
                         multiInstance[op] = op
                     else:
                         op = multiInstance[op]
                     if ddg_inst.opcode == "call":
-                        if ddg_inst.funcname in funcMap.keys():
+                        if ddg_inst.funcname in funcMap:
                             op_rep = funcMap[ddg_inst.funcname][ddg_inst.index(op) + 1]
                             rename_mapping[op_rep] = op
                         if "memcpy" in ddg_inst.funcname:
@@ -355,11 +407,11 @@ class DDG:
                             length = memcpyRec[self.remap[idx]][2]
                             for i in range(int(length)):
                                 dest_new = str(int(dest_address) + i)
-                                if dest_new in multiInstance.keys():
+                                if dest_new in multiInstance:
                                     dest_new = multiInstance[dest_new]
                                 else:
                                     multiInstance[dest_new] = dest_new
-                                if dest_new in G.nodes():
+                                if dest_new in G:
                                     counter = counter + 1
                                     G.add_node(dest_new+"+"+str(counter), len=itype, size=1, operand0="")
                                     multiInstance[dest_new] = dest_new+"+"+str(counter)
@@ -368,7 +420,7 @@ class DDG:
                                     G.add_node(dest_new, len=itype, size=1, operand0="")
                                     dest_node.append(dest_new)
                     else:
-                        if op not in G.nodes():
+                        if op not in G:
                             if ddg_inst.opcode == "and" or ddg_inst.opcode == "or" or ddg_inst.opcode == "shl" or ddg_inst.opcode == "lshr" or ddg_inst.opcode == "ashr":
                                 G.add_node(op, len=itype, size=1, operand0=op, bits=bitwiseRec[self.remap[idx]][2])
                                 dest_node.append(op)
@@ -388,23 +440,45 @@ class DDG:
                         if source_node.index(s_node) == dest_node.index(d_node):
                             G.add_edge(s_node, d_node, opcode=ddg_inst.opcode)
                     else:
-                        G.add_edge(s_node, d_node, opcode=ddg_inst.opcode)
+                        if "icmp" in ddg_inst.opcode or "fcmp" in ddg_inst.opcode:
+                            opcode = ddg_inst.opcode.split("+")[0]
+                            predicate = ddg_inst.opcode.split("+")[1]
+                            G.add_edge(s_node,d_node,opcode = opcode, pred = predicate)
+                        else:
+                            G.add_edge(s_node, d_node, opcode=ddg_inst.opcode)
 
             #print source_node
             #print dest_node
             #print "##############"
             totalbits += instbits
+            #print "new inst"
+            if len(ddg_inst.output) > 0:
+                dest = multiInstance[ddg_inst.output[0].operand]
+                for source in ddg_inst.input:
+                    op = multiInstance[source.operand]
+                    if isint(op) or isfloat(op):
+                        op = "constant" + str(idx)+"+"+str(ddg_inst.input.index(source))
+                    if op not in indexMap:
+                        indexMap[op] = {}
+                    indexMap[op][dest] = ddg_inst.input.index(source)
         print totalbits
         # have to hard-code the value of some nodes which are not assigned in the openmp part
+        #reduction
         #G.node['.omp_microtask._%2']['value'] = 140733601624680
-        G.node['.omp_microtask._@wall']['value'] = 6328592
-        G.node['.omp_microtask._@cols']['value'] = 6328580
-        #G.node['.omp_microtask._%2']['value'] = 140736750335664
-        #G.node['.omp_microtask._@no_of_nodes']['value'] = 6320352
-        #G.node['.omp_microtask._%0']['value'] = 139702011644672
-        #G.node['.omp_microtask._%2']['value'] = 140737223074288
-        #G.node['.omp_microtask.1_%2']['value'] = 140737223074184
-        #G.node['.omp_microtask.1_%0']['value'] = 139702011644672
+        #pathfinder
+        G.node['.omp_microtask._@wall']['value'] = 6312208
+        G.node['.omp_microtask._@cols']['value'] = 6312196
+        #bfs
+        #G.node['.omp_microtask._%2']['value'] = 140736706954416
+        #G.node['.omp_microtask._@no_of_nodes']['value'] = 6312160
+        #hotspot
+        #G.node['.omp_microtask._%0']['value'] = 140736312670784
+        #G.node['.omp_microtask._%2']['value'] = 140736312670768
+        #G.node['.omp_microtask.1_%2']['value'] = 140736312670784
+        #G.node['.omp_microtask.1_%0']['value'] = 140736312670768
+        #mm
+        #G.node['.omp_microtask._%2']['value'] =140734793722800
+        #G.node['.omp_microtask._%0']['value'] =140734793722816
         return G
 
 
@@ -413,8 +487,8 @@ trace = a.export_trace()
 ddg = DDG(trace)
 G = ddg.ddg_construct(ddg.dynamic_trace, a.memcpyRec, a.bitwiseRec)
 #nx.draw_random(G)
-nx.write_dot(G, "./test.dot")
-pvf_res = pvf.PVF(G, trace)
+#nx.write_dot(G, "./test.dot")
+pvf_res = pvf.PVF(G, trace, indexMap)
 subG = pvf_res.computePVF(config.outputDataSet)
-nx.nx.write_dot(subG, "./subgraph.dot")
+#nx.nx.write_dot(subG, "./subgraph.dot")
 #plt.show()

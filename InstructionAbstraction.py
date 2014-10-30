@@ -7,6 +7,8 @@ import setting as config
 import copy
 import math
 
+gmem = {}
+
 def isfloat(x):
     try:
         a = float(x)
@@ -96,6 +98,7 @@ class AbstractInst:
                             #if operand.startswith("%"):
                             #    operand = "bo"+operand
                             if opcode == "alloca":
+                                type = config.OSbits
                                 d = Data_item(outername+"_root"+"_"+str(random.randint(0,1024)),type, value)
                             else:
                                 temp = ""
@@ -168,6 +171,7 @@ class AbstractInst:
 
     def export_trace(self):
         # ID: 312 OPCode: 26 Value: 139679839926848
+        global gmem
         inst_key = []
         inst_value = []
         trace = []
@@ -175,7 +179,20 @@ class AbstractInst:
         inst_map = dict(zip(inst_key,inst_value))
         remap = []
         memoryBoundary = []
+        memory = {}
         Data_item = namedtuple("data_item", "operand type value")
+        _count = 0
+        for item in self.dynamic_trace:
+            if _count == 2:
+                break
+            if "profiling.exe" in item:
+                    res = re.findall("[0-9a-fA-F]+-[0-9a-fA-F]+", item)
+                    min = int(res[0].split("-")[0], 16)
+                    max = int(res[0].split("-")[1], 16)
+                    gmem[_count] = []
+                    gmem[_count].append(min)
+                    gmem[_count].append(max)
+                    _count += 1
         for idx, item in enumerate(self.dynamic_trace):
             if "ID:" in item:
                 item_new = item.rstrip("\n")
@@ -191,6 +208,10 @@ class AbstractInst:
                   value.address = res[2]
                   if res[1] == "27" and len(res) == 4:
                       output_value = res[3]
+
+                  if res[1] == "27" or res[1] == "28":
+                      self.processLDST(memoryBoundary,memory,idx)
+                      memoryBoundary = []
                 else:
                     if len(res) >= 3 :
                         output_value = res[2]
@@ -210,7 +231,7 @@ class AbstractInst:
                 remap.append(idx)
             else:
                 memoryBoundary.append(idx)
-        memory = self.processMemory(memoryBoundary)
+        #memory = self.processMemory(memoryBoundary)
         ret = []
         ret.append(trace)
         ret.append(remap)
@@ -230,7 +251,7 @@ class AbstractInst:
                 temp = []
             temp.append(self.dynamic_trace[item])
         memRange = {}
-        for key in memory.keys():
+        for key in memory:
             maps = memory[key]
             memRange[key] = []
             for i in maps:
@@ -240,7 +261,38 @@ class AbstractInst:
                     max = int(res[0].split("-")[1], 16)
                     memRange[key].append(min)
                     memRange[key].append(max)
+        print memRange
         return memRange
+
+    def processLDST(self, memoryBoundary, g_memory, index_of_ldst):
+        global gmem
+        memory = []
+        for item in memoryBoundary:
+            memory.append(self.dynamic_trace[item])
+        g_memory[index_of_ldst] = {}
+        for iter, key in enumerate(gmem.keys()):
+            g_memory[index_of_ldst][iter] = gmem[key]
+            g_memory[index_of_ldst][iter] = gmem[key]
+        for i in memory:
+            if "[stack]" in i:
+                res = re.findall("[0-9a-fA-F]+-[0-9a-fA-F]+", i)
+                min = int(res[0].split("-")[0], 16)
+                max = int(res[0].split("-")[1], 16)
+                g_memory[index_of_ldst]["stack"] = []
+                g_memory[index_of_ldst]["stack"].append(min)
+                g_memory[index_of_ldst]["stack"].append(max)
+            if "[heap]" in i:
+                res = re.findall("[0-9a-fA-F]+-[0-9a-fA-F]+", i)
+                min = int(res[0].split("-")[0], 16)
+                max = int(res[0].split("-")[1], 16)
+                g_memory[index_of_ldst]["heap"] = []
+                g_memory[index_of_ldst]["heap"].append(min)
+                g_memory[index_of_ldst]["heap"].append(max)
+            if "esp" in i:
+                esp = i.rstrip("\n").split(" ")[1]
+                g_memory[index_of_ldst]["esp"] = []
+                g_memory[index_of_ldst]["esp"].append(int(esp))
+
 
 
 
@@ -262,18 +314,17 @@ class FunctionMapping:
                 funcname = funcname[0].rstrip(")")
                 paras = re.findall('\(.*\)', res[0])
                 args = paras[0].split(" ")
-                for arg in args:
-                    arg = arg.lstrip("(").rstrip(")")
                 items = line.split(" ")
                 if "void" in line:
-                    if funcname not in func.keys():
+                    if funcname not in func:
                         func[funcname] = []
                         func[funcname].append("void")
                 else:
-                    if funcname not in func.keys():
+                    if funcname not in func:
                         func[funcname] = []
                         func[funcname].append(items[1])
                 for arg in args:
+                    arg = arg.lstrip("(").rstrip(")")
                     if "%" in arg:
                         func[funcname].append(arg)
         return func
