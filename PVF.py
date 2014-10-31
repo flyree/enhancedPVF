@@ -989,7 +989,8 @@ class PVF:
         return bb
 
     def checkCMPRange(self,G,oplist,predicate):
-        count = 0
+        count_1 = 0
+        count_2 = 0
         if int(predicate) == 40:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -998,14 +999,14 @@ class PVF:
                 new = value1
                 new = new ^ mask
                 if new < value2:
-                    count += 1
+                    count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
                 if value1 < new:
-                    count += 1
+                    count_2 += 1
         if int(predicate) == 41:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1014,14 +1015,14 @@ class PVF:
                 new = value1
                 new = new ^ mask
                 if new <= value2:
-                    count += 1
+                    count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
                 if value1 <= new:
-                    count += 1
+                    count_2 += 1
         if int(predicate) == 39:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1030,14 +1031,14 @@ class PVF:
                 new = value1
                 new = new ^ mask
                 if new >= value2:
-                    count += 1
+                    count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
                 if value1 >= new:
-                    count += 1
+                    count_2 += 1
         if int(predicate) == 32:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1046,14 +1047,14 @@ class PVF:
                 new = value1
                 new = new ^ mask
                 if new == value2:
-                    count += 1
+                    count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
                 if value1 == new:
-                    count += 1
+                    count_2 += 1
         if int(predicate) == 33:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1062,14 +1063,14 @@ class PVF:
                 new = value1
                 new = new ^ mask
                 if new != value2:
-                    count += 1
+                    count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
                 if value1 != new:
-                    count += 1
+                    count_2 += 1
         if int(predicate) == 38:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1078,32 +1079,53 @@ class PVF:
                 new = value1
                 new = new ^ mask
                 if new >= value2:
-                    count += 1
+                    count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
                 if value1 >= new:
-                    count += 1
+                    count_2 += 1
+
         oplist_new = []
         opcode = ""
         stack4recursion = []
         stack4recursion.extend(oplist)
-        final = count
+        icmpbits = {}
+        icmpbits[count_1] = []
+        icmpbits[count_1].append(oplist[0])
+        icmpbits[count_2] = []
+        icmpbits[count_2].append(oplist[1])
+        final = count_1+count_2
         while len(stack4recursion) != 0:
             node = stack4recursion.pop()
-            final -= count
             for edge in G.in_edges(node):
                 if "virtual" not in G.edge[edge[0]][edge[1]]['opcode']:
                     oplist_new.append(edge[0])
                     opcode = G.edge[edge[0]][edge[1]]['opcode']
-            if opcode != "load" and opcode != "store":
+            if opcode != "load" and opcode != "load":
                 for op in oplist_new:
-                    if len(G.in_edges(op)) != 0:
                         #self.getParent4CrashChain(G, op, cbits)
                         stack4recursion.append(op)
+                        if node in icmpbits[count_1]:
+                            icmpbits[count_1].append(op)
+                        if node in icmpbits[count_2]:
+                            icmpbits[count_2].append(op)
+            else:
+                if opcode == "load":
+                    for op in oplist_new:
+                        for edge in G.in_edges(op):
+                            opcode_new = G.edge[edge[0]][edge[1]]['opcode']
+                            if opcode_new == "store":
+                                stack4recursion.append(edge[1])
+                        if node in icmpbits[count_1]:
+                            icmpbits[count_1].append(edge[1])
+                        if node in icmpbits[count_2]:
+                            icmpbits[count_2].append(edge[1])
             oplist_new = []
+        final -= count_1*(len(icmpbits[count_1]))
+        final -= count_2*(len(icmpbits[count_2]))
         return final
 
     def simplePVF(self,G):
