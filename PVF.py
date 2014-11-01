@@ -44,6 +44,7 @@ class PVF:
         global aceBits
         global crashBits
         predecessors = []
+        predecessors_control = []
         for node in self.G:
             oprandlist = []
             opcode = ""
@@ -55,8 +56,8 @@ class PVF:
                     oprandlist.append(edge[0])
                     opcode = self.G.edge[edge[0]][edge[1]]['opcode']
             if opcode == "icmp" or opcode == "fcmp":
-                    predecessors.extend(oprandlist)
-                    predecessors.append(node)
+                    predecessors_control.extend(oprandlist)
+                    predecessors_control.append(node)
         #for node in predecessors[:]:
         #    for edge in self.G.out_edges(node):
         #        if self.G.edge[edge[0]][edge[1]]['opcode'] != 'virtual':
@@ -103,6 +104,15 @@ class PVF:
         #for p in processes:
         #    p.join()
         subG = self.G.subgraph(sub_nodes)
+        ReG = self.G.reverse()
+        control_nodes = []
+        for target in predecessors_control:
+            if target in ReG:
+                T = nx.bfs_tree(ReG, target)
+                tnodes = T.nodes()
+                control_nodes.extend(tnodes)
+                ReG.remove_nodes_from(tnodes)
+        subControlG = self.G.subgraph(control_nodes)
         # source = []
         # for node in subG:
         #     if subG.in_degree(node) == 0:
@@ -112,7 +122,20 @@ class PVF:
         #             if subG.edge[edge[0]][edge[1]]['opcode'] == 'virtual':
         #                 source.append(edge[1])
         print "Sub graph is done!"
-        self.simplePVF(subG)
+        predecessors.extend(predecessors_control)
+        ReG = self.G.reverse()
+        sub_nodes = []
+        for target in predecessors:
+          if target in ReG:
+             T = nx.bfs_tree(ReG, target)
+             tnodes = T.nodes()
+             sub_nodes.extend(tnodes)
+             ReG.remove_nodes_from(tnodes)
+             #sub_nodes.extend(T.nodes())
+        uG = self.G.subgraph(sub_nodes)
+        #self.simplePVF(subG, subControlG)
+        #self.simplePVF(subControlG,subG)
+        self.simplePVF(uG,subG)
         #visited = self.traverse4PVF(subG, "bo%2", targetList)
         #for item in subG.nodes():
         #    if item not in visited:
@@ -713,7 +736,7 @@ class PVF:
                         min_new = min(esp - 65536 - 128, min_f)
         return [counter, min_new]
 
-    def instructionPVF(self, G, opcode, oplist, node):
+    def instructionPVF(self, G, refG, opcode, oplist, node):
         global crashBits
         global stack
         bb = 0
@@ -784,7 +807,7 @@ class PVF:
                         #print range_mem
                         #print address
                         #print "+++++++"
-                        for key in range_mem.keys():
+                        for key in range_mem:
                             if key == 'heap':
                                 item1 = range_mem[key][0]
                                 item2 = range_mem[key][1]
@@ -872,7 +895,7 @@ class PVF:
                     min = 0
                     removed1 = 0
                     start_node = ""
-                    for key in range_mem.keys():
+                    for key in range_mem:
                             if key == 'heap':
                                 item1 = range_mem[key][0]
                                 item2 = range_mem[key][1]
@@ -963,7 +986,7 @@ class PVF:
         elif opcode in config.otherInst:
             if opcode == "icmp" or opcode == "fcmp":
                 predicate = G.edge[oplist[0]][node]['pred']
-                bb += self.checkCMPRange(G, oplist, predicate)
+                bb += self.checkCMPRange(G, refG, oplist, predicate)
             else:
                 if opcode == "phi":
                     pass
@@ -988,9 +1011,10 @@ class PVF:
         #print counter
         return bb
 
-    def checkCMPRange(self,G,oplist,predicate):
+    def checkCMPRange(self,G,refG,oplist,predicate):
         count_1 = 0
         count_2 = 0
+        oplist.reverse()
         if int(predicate) == 40:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1092,12 +1116,15 @@ class PVF:
         opcode = ""
         stack4recursion = []
         stack4recursion.extend(oplist)
+        final = 0
+        for op in oplist:
+            final += int(G.node[op]['len'])
         icmpbits = {}
         icmpbits[count_1] = []
         icmpbits[count_1].append(oplist[0])
         icmpbits[count_2] = []
         icmpbits[count_2].append(oplist[1])
-        final = count_1+count_2
+        final -= (count_1+count_2)
         while len(stack4recursion) != 0:
             node = stack4recursion.pop()
             for edge in G.in_edges(node):
@@ -1107,28 +1134,55 @@ class PVF:
             if opcode != "load" and opcode != "load":
                 for op in oplist_new:
                         #self.getParent4CrashChain(G, op, cbits)
+
                         stack4recursion.append(op)
-                        if node in icmpbits[count_1]:
-                            icmpbits[count_1].append(op)
-                        if node in icmpbits[count_2]:
-                            icmpbits[count_2].append(op)
+                        if op not in refG:
+                            for key in icmpbits:
+                                if node in icmpbits[key]:
+                                    if opcode == "trunc":
+                                        size = G.node[op]['len'] - G.node[node]['len']+key
+                                        final -= key*(len(icmpbits[key]))
+                                        icmpbits.pop(key)
+                                        if size not in icmpbits:
+                                            icmpbits[size] = []
+                                            icmpbits[size].append(op)
+                                        else:
+                                            icmpbits[size].append(op)
+                                        break
+                                    elif opcode == "sext":
+                                        size = G.node[node]['len'] - G.node[op]['len']
+                                        if key >= size:
+                                            final -= key*(len(icmpbits[key]))
+                                            icmpbits.pop(key)
+                                            if size not in icmpbits:
+                                                icmpbits[size] = []
+                                                icmpbits[size].append(op)
+                                            else:
+                                                icmpbits[size].append(op)
+                                        else:
+                                            icmpbits[key].append(op)
+                                            break
+                                    else:
+                                        icmpbits[key].append(op)
+                                        break
             else:
                 if opcode == "load":
                     for op in oplist_new:
                         for edge in G.in_edges(op):
-                            opcode_new = G.edge[edge[0]][edge[1]]['opcode']
-                            if opcode_new == "store":
-                                stack4recursion.append(edge[1])
-                        if node in icmpbits[count_1]:
-                            icmpbits[count_1].append(edge[1])
-                        if node in icmpbits[count_2]:
-                            icmpbits[count_2].append(edge[1])
+                                opcode_new = G.edge[edge[0]][edge[1]]['opcode']
+                                if opcode_new == "store":
+                                    stack4recursion.append(edge[1])
+                                    if edge[1] not in refG:
+                                      for key in icmpbits:
+                                          if node in icmpbits[key]:
+                                              icmpbits[key].append(edge[1])
             oplist_new = []
-        final -= count_1*(len(icmpbits[count_1]))
-        final -= count_2*(len(icmpbits[count_2]))
+        for key in icmpbits:
+            final -= key*len(icmpbits[key])
+
         return final
 
-    def simplePVF(self,G):
+    def simplePVF(self,G,refG):
         global rangeList
         global finalBits
         b = 0
@@ -1149,7 +1203,7 @@ class PVF:
                 #print "======"
                 #print opcode
                 #print oprandlist
-                b += self.instructionPVF(G, opcode, oprandlist, node)
+                b += self.instructionPVF(G, refG, opcode, oprandlist, node)
                 count += 1
         crash = 0
         print count

@@ -133,9 +133,11 @@ class DDG:
                             G.node[address]['operand' + str(size - 1)] = op
                             source_node.append(address)
                             # create fake edges between the address and the register
-                            G.add_node(op, len=itype,size=1, operand0=op,index=ddg_inst.input.index(source))
-                            G.add_edge(address, op, opcode='virtual')
-                            G.add_edge(op, address, opcode='virtual')
+                            if op not in G:
+                                G.add_node(op, len=itype,size=1, operand0=op,index=ddg_inst.input.index(source))
+                            else:
+                                G.add_edge(address, op, opcode='virtual')
+                                G.add_edge(op, address, opcode='virtual')
                             # addr_op_map[ddg_inst.address] = op
                     elif ddg_inst.opcode == "call":
                         if ddg_inst.funcname in funcMap:
@@ -161,7 +163,7 @@ class DDG:
                                 G.add_node(op, len=itype, size=1, operand0=op,index=ddg_inst.input.index(source))
                                 source_node.append(op)
                         else:
-                            if 'index' not in G.node[op].keys():
+                            if 'index' not in G.node[op]:
                                 G.node[op]['index'] = ddg_inst.input.index(source)
                             else:
                                 print "here"
