@@ -16,6 +16,43 @@ stack = []
 rangeList = {}
 gcount = 0
 finalBits = []
+loadstore = []
+finalBits_control = []
+
+def isfloat(x):
+    try:
+        a = float(x)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+def isint(x):
+    try:
+        a = float(x)
+        b = int(a)
+    except ValueError:
+        return False
+    else:
+        return a == b
+
+def iszero(x):
+    try:
+        if isfloat(x):
+            x = float(x)
+            if x == float(0):
+                return True
+            else:
+                return False
+        if isint(x):
+            x = int(x)
+            if x == 0:
+                return True
+            else:
+                return False
+    except ValueError:
+        return False
 
 
 def grouper(n, iterable, fillvalue=None):
@@ -135,6 +172,12 @@ class PVF:
         uG = self.G.subgraph(sub_nodes)
         #self.simplePVF(subG, subControlG)
         #self.simplePVF(subControlG,subG)
+        for node in uG.nodes_iter():
+            numOut = 0
+            for edge in uG.out_edges(node):
+                if "virtual" not in uG.edge[edge[0]][edge[1]]['opcode']:
+                    numOut += 1
+            uG.node[node]['out_edge'] = numOut
         self.simplePVF(uG,subG)
         #visited = self.traverse4PVF(subG, "bo%2", targetList)
         #for item in subG.nodes():
@@ -415,7 +458,9 @@ class PVF:
                         rangeList[oplist[i]].append(min_op)
                     type = G.node[oplist[i]]['len']
                     #if "constant" not in oplist[i]:
-                    finalBits.append(self.checkRange(G,oplist[i],max_op, min_op, type))
+                    if int(G.node[oplist[i]]['out_edge']) > 0:
+                        G.node[oplist[i]]['out_edge'] = int(G.node[oplist[i]]['out_edge']) -1
+                        finalBits.append(self.checkRange(G,oplist[i],max_op, min_op, type))
 
         if opcode == "sub" or opcode == "fsub":
             assert(len(oplist) == 2)
@@ -428,7 +473,9 @@ class PVF:
                 rangeList[oplist[0]].append(min_op)
             type = G.node[oplist[0]]['len']
             #if "constant" not in oplist[0]:
-            finalBits.append(self.checkRange(G, oplist[0],max_op, min_op, type))
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[0],max_op, min_op, type))
             max_op = int(G.node[oplist[0]]['value']) - min_range
             min_op = int(G.node[oplist[0]]['value']) - max_range
             if oplist[1] not in rangeList:
@@ -437,7 +484,9 @@ class PVF:
                 rangeList[oplist[1]].append(min_op)
             type = G.node[oplist[1]]['len']
             #if "constant" not in oplist[1]:
-            finalBits.append(self.checkRange(G, oplist[1],max_op, min_op, type))
+            if int(G.node[oplist[1]]['out_edge']) > 0:
+                G.node[oplist[1]]['out_edge'] = int(G.node[oplist[1]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[1],max_op, min_op, type))
 
         if opcode == "fmul" or opcode == "mul":
             assert(len(oplist) == 2)
@@ -454,7 +503,9 @@ class PVF:
                         rangeList[oplist[i]].append(min_op)
                     type = G.node[oplist[i]]['len']
                     #if "constant" not in oplist[i]:
-                    finalBits.append(self.checkRange(G,oplist[i],max_op, min_op, type))
+                    if int(G.node[oplist[i]]['out_edge']) > 0:
+                        G.node[oplist[i]]['out_edge'] = int(G.node[oplist[i]]['out_edge']) -1
+                        finalBits.append(self.checkRange(G,oplist[i],max_op, min_op, type))
 
         if opcode == "udiv"  or opcode == "sdiv" or opcode == "fdiv":
             assert(len(oplist) == 2)
@@ -467,7 +518,9 @@ class PVF:
                 rangeList[oplist[0]].append(min_op)
             type = G.node[oplist[0]]['len']
             #if "constant" not in oplist[0]:
-            finalBits.append(self.checkRange(G, oplist[0] ,max_op, min_op, type))
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[0] ,max_op, min_op, type))
             max_op = int(G.node[oplist[0]]['value'])/min_range
             min_op = int(G.node[oplist[0]]['value'])/max_range
             if oplist[1] not in rangeList:
@@ -476,7 +529,9 @@ class PVF:
                 rangeList[oplist[1]].append(min_op)
             type = G.node[oplist[1]]['len']
             #if "constant" not in oplist[1]:
-            finalBits.append(self.checkRange(G, oplist[1] ,max_op, min_op, type))
+            if int(G.node[oplist[1]]['out_edge']) > 0:
+                G.node[oplist[1]]['out_edge'] = int(G.node[oplist[1]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[1] ,max_op, min_op, type))
 
         if opcode == "sext":
             #bitstream = bin(values[0])
@@ -498,7 +553,9 @@ class PVF:
                 rangeList[oplist[0]].append(max_op)
                 rangeList[oplist[0]].append(min_op)
             type = G.node[oplist[0]]['len']
-            finalBits.append(self.checkRange(G, oplist[0],max_op, min_op, type))
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[0],max_op, min_op, type))
 
         if opcode == "phi":
             max_op = max_range
@@ -508,7 +565,7 @@ class PVF:
                 rangeList[oplist[0]].append(max_op)
                 rangeList[oplist[0]].append(min_op)
             type = G.node[oplist[0]]['len']
-            finalBits.append(self.checkRange(G, oplist[0] ,max_op, min_op, type))
+            #finalBits.append(self.checkRange(G, oplist[0] ,max_op, min_op, type))
 
         if opcode == "trunc":
             max_op = max_range
@@ -518,7 +575,9 @@ class PVF:
                 rangeList[oplist[0]].append(max_op)
                 rangeList[oplist[0]].append(min_op)
             type = G.node[oplist[0]]['len']
-            finalBits.append(self.checkRange(G, oplist[0] ,max_op, min_op, type))
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[0] ,max_op, min_op, type))
 
         if opcode == "srem":
             assert(len(oplist) == 2)
@@ -533,6 +592,9 @@ class PVF:
             rangeList[oplist[0]] = []
             rangeList[oplist[0]].append(max(tmp))
             rangeList[oplist[0]].append(min(tmp))
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[0] ,max(tmp), min(tmp), type))
             type = int(G.node[oplist[1]]['len'])
             value = int(G.node[oplist[1]]['value'])
             tmp = []
@@ -546,6 +608,9 @@ class PVF:
             rangeList[oplist[1]] = []
             rangeList[oplist[1]].append(max(tmp))
             rangeList[oplist[1]].append(min(tmp))
+            if int(G.node[oplist[1]]['out_edge']) > 0:
+                G.node[oplist[1]]['out_edge'] = int(G.node[oplist[1]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[1] ,max(tmp), min(tmp), type))
 
         if opcode == "getelementptr":
             if len(oplist) == 2:
@@ -560,7 +625,9 @@ class PVF:
                         rangeList[oplist[0]].append(min_op)
                     type = G.node[oplist[0]]['len']
                     #if "constant" not in oplist[0]:
-                    finalBits.append(self.checkRange(G, oplist[0],max_op, min_op, type))
+                    if int(G.node[oplist[0]]['out_edge']) > 0:
+                        G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                        finalBits.append(self.checkRange(G, oplist[0],max_op, min_op, type))
                     max_op = (max_range - int(G.node[oplist[0]]['value']))*8/int(size)
                     min_op = (min_range - int(G.node[oplist[0]]['value']))*8/int(size)
                     if oplist[1] not in rangeList:
@@ -569,7 +636,9 @@ class PVF:
                         rangeList[oplist[1]].append(min_op)
                     type = G.node[oplist[1]]['len']
                     #if "constant" not in oplist[1]:
-                    finalBits.append(self.checkRange(G, oplist[1] ,max_op, min_op, type))
+                    if int(G.node[oplist[1]]['out_edge']) > 0:
+                        G.node[oplist[1]]['out_edge'] = int(G.node[oplist[1]]['out_edge']) -1
+                        finalBits.append(self.checkRange(G, oplist[1] ,max_op, min_op, type))
 
             if len(oplist) == 3:
                 if "realTy" in G.node[oplist[0]]:
@@ -595,7 +664,9 @@ class PVF:
                             rangeList[oplist[0]].append(min_op)
                         type = G.node[oplist[0]]['len']
                         #if "constant" not in oplist[0]:
-                        finalBits.append(self.checkRange(G, oplist[0] ,max_op, min_op, type))
+                        if int(G.node[oplist[0]]['out_edge']) > 0:
+                            G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                            finalBits.append(self.checkRange(G, oplist[0] ,max_op, min_op, type))
                         max_op = (max_range - int(G.node[oplist[0]]['value']) - int(t/8))*8/int(size)
                         min_op = (min_range - int(G.node[oplist[0]]['value']) - int(t/8))*8/int(size)
                         if oplist[1] not in rangeList:
@@ -604,7 +675,9 @@ class PVF:
                             rangeList[oplist[1]].append(min_op)
                         type = G.node[oplist[1]]['len']
                         #if "constant" not in oplist[1]:
-                        finalBits.append(self.checkRange(G, oplist[1],max_op, min_op, type))
+                        if int(G.node[oplist[1]]['out_edge']) > 0:
+                            G.node[oplist[1]]['out_edge'] = int(G.node[oplist[1]]['out_edge']) -1
+                            finalBits.append(self.checkRange(G, oplist[1],max_op, min_op, type))
                         max_op = (max_range - int(G.node[oplist[0]]['value']) - int(G.node[oplist[1]]['value'])*int(size))/8
                         min_op = (min_range - int(G.node[oplist[0]]['value']) - int(G.node[oplist[1]]['value'])*int(size))/8
                         if oplist[2] not in rangeList:
@@ -613,7 +686,9 @@ class PVF:
                             rangeList[oplist[2]].append(min_op)
                         type = G.node[oplist[2]]['len']
                         #if "constant" not in oplist[2]:
-                        finalBits.append(self.checkRange(G, oplist[2],max_op, min_op, type))
+                        if int(G.node[oplist[2]]['out_edge']) > 0:
+                            G.node[oplist[2]]['out_edge'] = int(G.node[oplist[2]]['out_edge']) -1
+                            finalBits.append(self.checkRange(G, oplist[2],max_op, min_op, type))
 
                     if "elementTy" in G.node[oplist[0]]:
                         element = G.node[oplist[0]]['elementTy']
@@ -626,7 +701,9 @@ class PVF:
                             rangeList[oplist[0]].append(min_op)
                         type = G.node[oplist[0]]['len']
                         #if "constant" not in oplist[0]:
-                        finalBits.append(self.checkRange(G, oplist[0],max_op, min_op, type))
+                        if int(G.node[oplist[0]]['out_edge']) > 0:
+                            G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                            finalBits.append(self.checkRange(G, oplist[0],max_op, min_op, type))
                         max_op = (max_range - int(G.node[oplist[0]]['value']) - t)/int(size)
                         min_op = (min_range - int(G.node[oplist[0]]['value']) - t)/int(size)
                         if oplist[1] not in rangeList:
@@ -635,7 +712,9 @@ class PVF:
                             rangeList[oplist[1]].append(min_op)
                         type = G.node[oplist[1]]['len']
                         #if "constant" not in oplist[1]:
-                        finalBits.append(self.checkRange(G,oplist[1],max_op, min_op, type))
+                        if int(G.node[oplist[1]]['out_edge']) > 0:
+                            G.node[oplist[1]]['out_edge'] = int(G.node[oplist[1]]['out_edge']) -1
+                            finalBits.append(self.checkRange(G,oplist[1],max_op, min_op, type))
                         max_op = (max_range - int(G.node[oplist[0]]['value']) - int(G.node[oplist[1]]['value'])*int(size))/int(int(element)/8)
                         min_op = (min_range - int(G.node[oplist[0]]['value']) - int(G.node[oplist[1]]['value'])*int(size))/int(int(element)/8)
                         if oplist[2] not in rangeList:
@@ -644,7 +723,9 @@ class PVF:
                             rangeList[oplist[2]].append(min_op)
                         type = G.node[oplist[2]]['len']
                         #if "constant" not in oplist[2]:
-                        finalBits.append(self.checkRange(G, oplist[2],max_op, min_op, type))
+                        if int(G.node[oplist[2]]['out_edge']) > 0:
+                            G.node[oplist[2]]['out_edge'] = int(G.node[oplist[2]]['out_edge']) -1
+                            finalBits.append(self.checkRange(G, oplist[2],max_op, min_op, type))
 
 
 
@@ -656,7 +737,9 @@ class PVF:
                 rangeList[oplist[0]].append(max_op)
                 rangeList[oplist[0]].append(min_op)
             type = G.node[oplist[0]]['len']
-            finalBits.append(self.checkRange(G, oplist[0], max_op, min_op, type))
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[0], max_op, min_op, type))
 
         if opcode == "alloca":
             max_op = max_range
@@ -666,7 +749,9 @@ class PVF:
                 rangeList[oplist[0]].append(max_op)
                 rangeList[oplist[0]].append(min_op)
             type = G.node[oplist[0]]['len']
-            finalBits.append(self.checkRange(G, oplist[0], max_op, min_op, type))
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[0], max_op, min_op, type))
 
 
 
@@ -739,18 +824,22 @@ class PVF:
     def instructionPVF(self, G, refG, opcode, oplist, node):
         global crashBits
         global stack
+        global loadstore
+        global rangeList
+        global finalBits
         bb = 0
         removed = 0
-        counter = 0
         if opcode in config.computationInst:
             for op in oplist:
                 #if "constant" in op:
                 #    continue
                 res = G.node[op]['len']
+                if op in config.floatingPoint:
+                    res = int(res*0.6)
                 bb += int(res)
             if opcode == "mul" or opcode == "fmul":
                     for index, op in enumerate(oplist):
-                        if (G.node[op]['value'] == int(0) or G.node[op]['value'] == float(0)):
+                        if iszero(G.node[op]['value']) :
                            bb -= G.node[oplist[1-index]]['len']
             #res = G.node[node]['len']
             #b += int(res)
@@ -843,6 +932,10 @@ class PVF:
                                     break
                         if max == 0 or min == 0:
                             print "wrong!!!!"
+                        if iszero(G.node[node]['value']):
+                            max = 0
+                            min = 0
+                            removed1 = 64
                         for edge in G.in_edges(op):
                             if G.edge[edge[0]][edge[1]]['opcode'] == "virtual":
                                     if "pre" in G.node[node]:
@@ -865,23 +958,34 @@ class PVF:
                             #print removed
                             #print removed1
                         #else:
-                        for edge in G.in_edges(op):
-                                # for alloca
-                            if "root" in edge[0]:
-                                self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
-                                break
-                            if "mem" in G.node[edge[0]]:
-                                self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
-                                removed += removed1
-                                break
-                            if edge[0] in config.Outbound:
-                                self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
-                                removed += removed1
-                                break
-                        if len(G.in_edges(op)) == 0:
-                            self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
-                        removed += removed1
+                        #for edge in G.in_edges(op):
+                        #        # for alloca
+                        #    if "root" in edge[0]:
+                        #        self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
+                        #        break
+                        #    if "mem" in G.node[edge[0]]:
+                        #        self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
+                        #        #removed += removed1
+                        #        break
+                        #    if edge[0] in config.Outbound:
+                        #        finalBits.append(self.checkRange(G,start_node,max,min,int(G.node[start_node]['len'])))
+                                #removed += removed1
+                        #        break
+                        #if len(G.in_edges(op)) == 0:
+                        #    self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
+                        #removed += removed1
+                        loadstore.append(removed1)
+                        chain = 0
+                        crash = 0
+                        for i in finalBits:
+                            chain += i
+                        for i in loadstore:
+                            crash += i
+                        print chain
+                        print crash
+                        print node
                         stack = []
+                        rangeList = {}
 
             if opcode == "store":
                 if "mem" in G.node[node]:
@@ -956,24 +1060,35 @@ class PVF:
                             #print removed
                             #print removed1
                     #else:
-                    for edge in G.in_edges(node):
-                                # for alloca
-                            if "root" in edge[0]:
-                                self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
-                                break
-                            if "mem" in G.node[edge[0]]:
-                                self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
+                    #for edge in G.in_edges(node):
+                    #            # for alloca
+                    #        if "root" in edge[0]:
+                    #            self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
+                    #            break
+                    #        if "mem" in G.node[edge[0]]:
+                    #            self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
+                    #            #removed += removed1
+                    #            break
+                    #        if edge[0] in config.Outbound:
+                    #            self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
                                 #removed += removed1
-                                break
-                            if edge[0] in config.Outbound:
-                                self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
-                                #removed += removed1
-                                break
-                    if len(G.in_edges(node)) == 0:
-                        self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
-                    removed += removed1
+                    #            break
+                    #if len(G.in_edges(node)) == 0:
+                    #    self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
+                    #removed += removed1
+                    loadstore.append(removed1)
+                    chain = 0
+                    crash = 0
+                    for i in finalBits:
+                            chain += i
+                    for i in loadstore:
+                            crash += i
+                    print chain
+                    print crash
+                    print node
                     #self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
                     stack = []
+                    rangeList = {}
 
         elif opcode in config.castInst:
             for op in oplist:
@@ -1003,7 +1118,6 @@ class PVF:
             print "WRONG"
         #if opcode not in config.memoryInst:
         #    bb += G.node[node]['len']
-        bb -= removed
         #print b
         #print "######"
         #print node
@@ -1014,6 +1128,7 @@ class PVF:
     def checkCMPRange(self,G,refG,oplist,predicate):
         count_1 = 0
         count_2 = 0
+        global finalBits_control
         oplist.reverse()
         if int(predicate) == 40:
             value1 = int(G.node[oplist[0]]['value'])
@@ -1124,7 +1239,8 @@ class PVF:
         icmpbits[count_1].append(oplist[0])
         icmpbits[count_2] = []
         icmpbits[count_2].append(oplist[1])
-        final -= (count_1+count_2)
+        finalBits_control.append(count_1)
+        finalBits_control.append(count_2)
         while len(stack4recursion) != 0:
             node = stack4recursion.pop()
             for edge in G.in_edges(node):
@@ -1146,8 +1262,10 @@ class PVF:
                                         if size not in icmpbits:
                                             icmpbits[size] = []
                                             icmpbits[size].append(op)
+                                            finalBits_control.append(size)
                                         else:
                                             icmpbits[size].append(op)
+                                            finalBits_control.append(size)
                                         break
                                     elif opcode == "sext":
                                         size = G.node[node]['len'] - G.node[op]['len']
@@ -1157,34 +1275,52 @@ class PVF:
                                             if size not in icmpbits:
                                                 icmpbits[size] = []
                                                 icmpbits[size].append(op)
+                                                finalBits_control.append(size)
                                             else:
                                                 icmpbits[size].append(op)
+                                                finalBits_control.append(size)
                                         else:
                                             icmpbits[key].append(op)
+                                            finalBits_control.append(key)
                                             break
                                     else:
                                         icmpbits[key].append(op)
+                                        finalBits_control.append(key)
                                         break
+                        else:
+                            if G.node[op]['out_edge'] > 0:
+                                for key in icmpbits:
+                                    if node in icmpbits[key]:
+                                        icmpbits[key].append(op)
+                                        finalBits_control.append(key)
+                                G.node[op]['out_edge'] = G.node[op]['out_edge'] -1
             else:
                 if opcode == "load":
                     for op in oplist_new:
                         for edge in G.in_edges(op):
                                 opcode_new = G.edge[edge[0]][edge[1]]['opcode']
                                 if opcode_new == "store":
-                                    stack4recursion.append(edge[1])
-                                    if edge[1] not in refG:
+                                    stack4recursion.append(edge[0])
+                                    if edge[0] not in refG:
                                       for key in icmpbits:
                                           if node in icmpbits[key]:
-                                              icmpbits[key].append(edge[1])
+                                              icmpbits[key].append(edge[0])
+                                              finalBits_control.append(key)
+                                    else:
+                                        if G.node[edge[0]]['out_edge'] > 0:
+                                            for key in icmpbits:
+                                                 if node in icmpbits[key]:
+                                                     icmpbits[key].append(edge[0])
+                                                     finalBits_control.append(key)
+                                            G.node[edge[0]]['out_edge'] = G.node[edge[0]]['out_edge'] -1
             oplist_new = []
-        for key in icmpbits:
-            final -= key*len(icmpbits[key])
-
         return final
 
     def simplePVF(self,G,refG):
         global rangeList
         global finalBits
+        global loadstore
+        global finalBits_control
         b = 0
         print "Total subG"
         print len(G.nodes())
@@ -1206,14 +1342,14 @@ class PVF:
                 b += self.instructionPVF(G, refG, opcode, oprandlist, node)
                 count += 1
         crash = 0
-        print count
-        for i in rangeList:
-            if len(rangeList[i]) == 3:
-                crash += len(rangeList[i][2])
-        print crash
-        crash = 0
+        ldst = 0
+        control = 0
+        for i in finalBits_control:
+            control += i
         for i in finalBits:
             crash += i
+        for i in loadstore:
+            ldst += i
         #print "without cmp"
         #print b
         #for node in self.G.nodes_iter():
@@ -1227,7 +1363,11 @@ class PVF:
         #            opcode = self.G.edge[edge[0]][edge[1]]['opcode']
         #    if opcode == "icmp" or opcode == "fcmp":
         #        b += self.instructionPVF(self.G, opcode, oprandlist, node)
-        print "Crash:"
+        print "Control chain"
+        print control
+        print "Crash chain"
         print crash
+        print "Crash on ld st"
+        print ldst
         print "SDC bits"
         print b

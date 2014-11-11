@@ -45,10 +45,11 @@ Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
 #-------------
 OSbits = 64
 computationInst = ['add','fadd','sub','fsub','mul', 'fmul','udiv', 'sdiv', 'fdiv', 'urem', 'srem', 'frem']
+floatingPoint = ['fadd','fmul','fdiv','fsub','frem']
 bitwiseInst = ['shl', 'lshr', 'ashr', 'and', 'or', 'xor']
 pointerInst = ['getelementptr']
 memoryInst = ['load', 'store','alloca']
-castInst = ['zext', 'sext', 'fptrunc', 'fpext', 'fptoui', 'fptosi', 'uitofp', 'sitofp', 'ptrtoint', 'inttoptr', 'bitcast', 'addrspacecast','trunk']
+castInst = ['zext', 'sext', 'fptrunc', 'fpext', 'fptoui', 'fptosi', 'uitofp', 'sitofp', 'ptrtoint', 'inttoptr', 'bitcast', 'addrspacecast','trunc']
 otherInst = ['icmp', 'fcmp', 'phi', 'select', 'call']
 
 
