@@ -28,12 +28,13 @@ def isint(x):
         return a == b
 
 class DDGInst:
-    def __init__(self, opcode, input, output, funcname="", address=-1):
+    def __init__(self, opcode, input, output, funcname="", address=-1, cycle = 0):
         self.opcode = opcode
         self.input = input
         self.output = output
         self.address = address
         self.funcname = funcname
+        self.cycle = cycle
 
 class AbstractInst:
 
@@ -197,6 +198,8 @@ class AbstractInst:
             if "ID:" in item:
                 item_new = item.rstrip("\n")
                 res = re.findall("[-+]?[0-9]*\.?[0-9]+", item_new)
+                cycle = res[len(res)-1]
+                res.remove(cycle)
                 value = copy.deepcopy(inst_map[res[0]])
                 assert isinstance(value, DDGInst)
                 if len(value.output)>0:
@@ -227,6 +230,7 @@ class AbstractInst:
                     self.bitwiseRec[idx].append(res[4])
                 if len(value.output)>0:
                     value.output[0] = Data_item(output_operand, output_type, output_value)
+                value.cycle = int(cycle)
                 trace.append(value)
                 remap.append(idx)
             else:

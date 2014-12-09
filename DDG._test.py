@@ -4,7 +4,7 @@ import networkx as nx
 import setting as config
 import PVF as pvf
 from bisect import bisect_left
-
+import time
 sys.setrecursionlimit(10000)
 counter = 0
 phiNodeCheck = {}
@@ -55,6 +55,7 @@ class DDG:
         G = nx.DiGraph()
         multiInstance = {}
         rename_mapping = {}
+        global_hash_cycle = {}
         fm = InstructionAbstraction.FunctionMapping(config.IRpath)
         funcMap = fm.extractFuncDef()
         # format of funcmap: {funcname:[type/void, arg1, arg2 ...], funcname:[...]}
@@ -68,7 +69,6 @@ class DDG:
             instbits = 0
             #print idx
             #print ddg_inst.opcode
-            #if idx == 2654:
             # print ddg_inst.input[0]
             # print ddg_inst.output[0]
             for source in ddg_inst.input:
@@ -109,9 +109,8 @@ class DDG:
                 #if itype == 1:
                 #    print "here"
                 else:
-                     if ddg_inst.opcode == "load":
-                        res = itype
-                        instbits += int(res)
+                    res = itype
+                    instbits += int(res)
                 if ddg_inst.address != -1:
                     if ddg_inst.opcode == "load":
                         address = ddg_inst.address
@@ -122,21 +121,24 @@ class DDG:
                         if ddg_inst.address not in G:
                             index = self.remap[idx]
                             #limit = binary_search(sorted(self.memory), index)
-                            G.add_node(address, len=itype, size=1, operand0=op, mem=index, index=ddg_inst.input.index(source))
-                            G.add_node(op, len=itype,size=1, operand0=op,index=ddg_inst.input.index(source))
-                            G.add_edge(address, op, opcode='virtual')
+                            G.add_node(address, len=itype, size=1, operand0=op, mem=index, index=ddg_inst.input.index(source), cycle = ddg_inst.cycle)
+                            G.add_node(op, len=itype,size=1, operand0=op,index=ddg_inst.input.index(source), cycle = ddg_inst.cycle)
+                            #G.add_edge(address, op, opcode='virtual')
                             G.add_edge(op, address, opcode='virtual')
                             source_node.append(address)
                         else:
+                            index = self.remap[idx]
                             size = int(G.node[address]['size']) + 1
                             G.node[address]['size'] = size
                             G.node[address]['operand' + str(size - 1)] = op
+                            G.node[address]['index'] = ddg_inst.input.index(source)
+                            G.node[address]['mem'] = index
                             source_node.append(address)
                             # create fake edges between the address and the register
                             if op not in G:
-                                G.add_node(op, len=itype,size=1, operand0=op,index=ddg_inst.input.index(source))
+                                G.add_node(op, len=itype,size=1, operand0=op,index=ddg_inst.input.index(source), cycle = ddg_inst.cycle)
                             else:
-                                G.add_edge(address, op, opcode='virtual')
+                                #G.add_edge(address, op, opcode='virtual')
                                 G.add_edge(op, address, opcode='virtual')
                             # addr_op_map[ddg_inst.address] = op
                     elif ddg_inst.opcode == "call":
@@ -156,11 +158,11 @@ class DDG:
                         if op not in G:
                             if isint(op) or isfloat(op):
                                 op_new = "constant" + str(idx)+"+"+str(ddg_inst.input.index(source))
-                                G.add_node(op_new, len=itype, size=1, operand0=op_new,index=ddg_inst.input.index(source), value=op)
+                                G.add_node(op_new, len=itype, size=1, operand0=op_new,index=ddg_inst.input.index(source), value=op ,cycle = ddg_inst.cycle)
                                 source_node.append(op_new)
                                 #instbits -= itype
                             else:
-                                G.add_node(op, len=itype, size=1, operand0=op,index=ddg_inst.input.index(source))
+                                G.add_node(op, len=itype, size=1, operand0=op,index=ddg_inst.input.index(source),cycle = ddg_inst.cycle)
                                 source_node.append(op)
                         else:
                             if 'index' not in G.node[op]:
@@ -196,7 +198,7 @@ class DDG:
                                     G.node[str(int(source_address) + i )]['operand' + str(size - 1)] = op
                                     source_node.append(str(int(source_address) + i))
                                 else:
-                                    G.add_node(str(int(source_address) + i ), len=itype, size=1, operand0="")
+                                    G.add_node(str(int(source_address) + i ), len=itype, size=1, operand0="",cycle = ddg_inst.cycle)
                                     source_node.append(str(int(source_address) + i))
                     else:
                         #if op not in G.nodes():
@@ -211,7 +213,7 @@ class DDG:
                                 if op not in G:
                                     if isint(op) or isfloat(op):
                                         op_new = "constant" + str(idx)+"+"+str(ddg_inst.input.index(source))
-                                        G.add_node(op_new, len=itype, size=1, operand0=op_new, value = op,index=ddg_inst.input.index(source))
+                                        G.add_node(op_new, len=itype, size=1, operand0=op_new, value = op,index=ddg_inst.input.index(source),cycle = ddg_inst.cycle)
                                         source_node.append(op_new)
                                         #instbits -= itype
                                     else:
@@ -219,10 +221,10 @@ class DDG:
                                                 or ddg_inst.opcode == "shl" or \
                                                         ddg_inst.opcode == "lshr" or ddg_inst.opcode == "ashr":
                                             G.add_node(op, len=itype, size=1,
-                                                       operand0=op, bits=bitwiseRec[self.remap[idx]][ddg_inst.input.index(source)])
+                                                       operand0=op, bits=bitwiseRec[self.remap[idx]][ddg_inst.input.index(source)],cycle = ddg_inst.cycle, index=ddg_inst.input.index(source))
                                             source_node.append(op)
                                         else:
-                                            G.add_node(op, len=itype, size=1, operand0=op,index=ddg_inst.input.index(source))
+                                            G.add_node(op, len=itype, size=1, operand0=op,index=ddg_inst.input.index(source),cycle = ddg_inst.cycle)
                                             source_node.append(op)
                         #else:
                             #if ddg_inst.opcode == "phi":
@@ -232,6 +234,8 @@ class DDG:
                             #                phiNodeCheck[i] = op
                             #                flag_phi = 1
                                 else:
+                                    if 'index' not in G.node[op]:
+                                        G.node[op]['index'] = ddg_inst.input.index(source)
                                     source_node.append(op)
             if ddg_inst.opcode == "getelementptr":
                 if "+" in str(ddg_inst.input[0].type):
@@ -241,7 +245,10 @@ class DDG:
                         if isint(new_split[2]) or isfloat(new_split[2]) :
                             if new_split[2] == '0':
                                 #just for now, cannot handle 2D array
-                                new_split[2] = 64
+                                if "nw" in config.IRpath:
+                                    new_split[2] = 32
+                                else:
+                                    new_split[2] = 64
                             G.node[multiInstance[ddg_inst.input[0].operand]]['elementTy'] = new_split[2]
                         else:
                             G.node[multiInstance[ddg_inst.input[0].operand]]['structName'] = new_split[2]
@@ -254,7 +261,7 @@ class DDG:
                     for source in ddg_inst.input:
                         if source.operand == phiNodeCheck[index]:
                             pos = ddg_inst.input.index(source)
-                            G.add_node(phiNodeCheck[index],len=itype, size=1,index=pos, value = ddg_inst.output[0].value)
+                            G.add_node(phiNodeCheck[index],len=itype, size=1,index=pos, value = ddg_inst.output[0].value,cycle = ddg_inst.cycle)
                 else:
                     G.node[phiNodeCheck[index]]['value'] = ddg_inst.output[0].value
                 source_node.append(phiNodeCheck[index])
@@ -305,22 +312,19 @@ class DDG:
                         if address not in G:
                             index = self.remap[idx]
                             #limit = binary_search(sorted(self.memory), index)
-                            G.add_node(address, len=itype, size=1, operand0=op, mem=index)
+                            G.add_node(address, len=itype, size=1, store=source_node[0], mem=index,cycle = ddg_inst.cycle, stindex = 1)
                             dest_node.append(address)
-                            sop =ddg_inst.input[0].operand
-                            if sop in multiInstance:
-                                sop = multiInstance[sop]
                             op1 = op
                             #if op in G:
                             #    op = op.split("+")[0]
                             #    op1 = op+"+"+str(counter)
                             #    multiInstance[op] = op1
                             if op1 in G:
-                                if "pre" in G.node[op1]:
-                                    G.node[op1]['pre'].append(sop)
+                                G.node[source_node[0]]['post'] = op1
                             else:
-                                G.add_node(op1, len=itype,size=1, operand0=op1, pre=[sop], value=ddg_inst.address)
-                            G.add_edge(address, op1, opcode='virtual')
+                                G.add_node(op1, len=itype,size=1, operand0=op1, value=ddg_inst.address,cycle = ddg_inst.cycle)
+                                G.node[source_node[0]]['post'] = op1
+                            #G.add_edge(address, op1, opcode='virtual')
                             G.add_edge(op1, address, opcode='virtual')
                         else:
                             counter += 1
@@ -329,22 +333,19 @@ class DDG:
                             multiInstance[address] = address1
                             index = self.remap[idx]
                             #limit = binary_search(sorted(self.memory),index)
-                            G.add_node(address1, len=itype, size=1, operand0=op, mem=index)
+                            G.add_node(address1, len=itype, size=1, store=source_node[0], mem=index,cycle = ddg_inst.cycle, stindex = 1)
                             dest_node.append(address1)
-                            sop =ddg_inst.input[0].operand
-                            if sop in multiInstance:
-                                sop = multiInstance[sop]
                             op1 = op
                             #if op in G:
                             #    op = op.split("+")[0]
                             #    op1 = op+"+"+str(counter)
                             #    multiInstance[op] = op1
                             if op1 in G:
-                                if "pre" in G.node[op1]:
-                                    G.node[op1]['pre'].append(sop)
+                                G.node[source_node[0]]['post'] = op1
                             else:
-                                G.add_node(op1, len=itype, size=1, operand0=op1, pre=[sop],value=ddg_inst.address)
-                            G.add_edge(address1, op1, opcode='virtual')
+                                G.add_node(op1, len=itype, size=1, operand0=op1,value=ddg_inst.address,cycle = ddg_inst.cycle)
+                                G.node[source_node[0]]['post'] = op1
+                            #G.add_edge(address1, op1, opcode='virtual')
                             G.add_edge(op1, address1, opcode='virtual')
                             # addr_op_map[ddg_inst.address] = op
                     elif ddg_inst.opcode == "call":
@@ -365,9 +366,9 @@ class DDG:
                                 sop =ddg_inst.input[0].operand
                                 if sop in multiInstance:
                                     sop = multiInstance[sop]
-                                G.add_node(op, len=itype, size=1, operand0=op, pre=sop, value = dest.value)
+                                G.add_node(op, len=itype, size=1, operand0=op, pre=sop, value = dest.value,cycle = ddg_inst.cycle)
                             else:
-                                G.add_node(op, len=itype, size=1, operand0=op, value = dest.value)
+                                G.add_node(op, len=itype, size=1, operand0=op, value = dest.value,cycle = ddg_inst.cycle)
                             dest_node.append(op)
                         else:
                             counter += 1
@@ -378,9 +379,9 @@ class DDG:
                                 sop =ddg_inst.input[0].operand
                                 if sop in multiInstance:
                                     sop = multiInstance[sop]
-                                G.add_node(op1, len=itype, size=1, operand0=op1, pre=sop, value = dest.value)
+                                G.add_node(op1, len=itype, size=1, operand0=op1, pre=sop, value = dest.value,cycle = ddg_inst.cycle)
                             else:
-                                G.add_node(op1, len=itype, size=1, operand0=op1, value = dest.value)
+                                G.add_node(op1, len=itype, size=1, operand0=op1, value = dest.value,cycle = ddg_inst.cycle)
                             dest_node.append(op1)
                 else:
                     if op not in multiInstance:
@@ -415,26 +416,26 @@ class DDG:
                                     multiInstance[dest_new] = dest_new
                                 if dest_new in G:
                                     counter = counter + 1
-                                    G.add_node(dest_new+"+"+str(counter), len=itype, size=1, operand0="")
+                                    G.add_node(dest_new+"+"+str(counter), len=itype, size=1, operand0="",cycle = ddg_inst.cycle)
                                     multiInstance[dest_new] = dest_new+"+"+str(counter)
                                     dest_node.append(dest_new+"+"+str(counter))
                                 else:
-                                    G.add_node(dest_new, len=itype, size=1, operand0="")
+                                    G.add_node(dest_new, len=itype, size=1, operand0="",cycle = ddg_inst.cycle)
                                     dest_node.append(dest_new)
                     else:
                         if op not in G:
                             if ddg_inst.opcode == "and" or ddg_inst.opcode == "or" or ddg_inst.opcode == "shl" or ddg_inst.opcode == "lshr" or ddg_inst.opcode == "ashr":
-                                G.add_node(op, len=itype, size=1, operand0=op, bits=bitwiseRec[self.remap[idx]][2])
+                                G.add_node(op, len=itype, size=1, operand0=op, bits=bitwiseRec[self.remap[idx]][2],cycle = ddg_inst.cycle)
                                 dest_node.append(op)
                             else:
-                                G.add_node(op, len=itype, size=1, operand0=op, value = dest.value)
+                                G.add_node(op, len=itype, size=1, operand0=op, value = dest.value,cycle = ddg_inst.cycle)
                                 dest_node.append(op)
                         else:
                             counter += 1
                             op = op.split("+")[0]
                             op1 = op+"+"+str(counter)
                             multiInstance[op] = op1
-                            G.add_node(op1, len=itype, size=1, operand0=op1, value = dest.value)
+                            G.add_node(op1, len=itype, size=1, operand0=op1, value = dest.value,cycle = ddg_inst.cycle)
                             dest_node.append(op1)
             for s_node in source_node:
                 for d_node in dest_node:
@@ -448,10 +449,20 @@ class DDG:
                             G.add_edge(s_node,d_node,opcode = opcode, pred = predicate)
                         else:
                             G.add_edge(s_node, d_node, opcode=ddg_inst.opcode)
+            if int(ddg_inst.cycle) not in global_hash_cycle:
+                global_hash_cycle[int(ddg_inst.cycle)] = []
+                for s_node in source_node:
+                    global_hash_cycle[int(ddg_inst.cycle)].append(s_node)
+                for d_node in dest_node:
+                    if ddg_inst.opcode == "store":
+                        global_hash_cycle[int(ddg_inst.cycle)].append(d_node)
+                global_hash_cycle[int(ddg_inst.cycle)].append("opcode"+ddg_inst.opcode)
 
+            #print "##############"
             #print source_node
             #print dest_node
-            #print "##############"
+            #print ddg_inst.opcode
+            #print instbits
             totalbits += instbits
             #print "new inst"
             if len(ddg_inst.output) > 0:
@@ -470,27 +481,37 @@ class DDG:
         #pathfinder
         G.node['.omp_microtask._@wall']['value'] = 6312208
         G.node['.omp_microtask._@cols']['value'] = 6312196
+        G.node['.omp_microtask._%2']['value'] = 140733683466480
         #bfs
         #G.node['.omp_microtask._%2']['value'] = 140736706954416
         #G.node['.omp_microtask._@no_of_nodes']['value'] = 6312160
         #hotspot
-        #G.node['.omp_microtask._%0']['value'] = 140736312670784
-        #G.node['.omp_microtask._%2']['value'] = 140736312670768
-        #G.node['.omp_microtask.1_%2']['value'] = 140736312670784
-        #G.node['.omp_microtask.1_%0']['value'] = 140736312670768
+        #G.node['.omp_microtask._%0']['value'] = 140737436492192
+        #G.node['.omp_microtask._%2']['value'] = 140737436493336
+        #G.node['.omp_microtask.1_%2']['value'] = 140737436492192
+        #G.node['.omp_microtask.1_%0']['value'] = 140737436493264
+        #lavaMD
+        #G.node['.omp_microtask._%0']['value'] = 140736284336096
+        #G.node['.omp_microtask._%2']['value'] = 140736284337168
         #mm
-        #G.node['.omp_microtask._%2']['value'] =140734793722800
-        #G.node['.omp_microtask._%0']['value'] =140734793722816
-        return G
+        #G.node['.omp_microtask._%2']['value'] =140735058384288
+        #G.node['.omp_microtask._%0']['value'] =140735058383200
+        #nw
+        #G.node['.omp_microtask._%0']['value'] = 140735832277024
+        #G.node['.omp_microtask._%2']['value'] = 140735832278176
+        #G.node['.omp_microtask.9_%2']['value'] = 140735832278080
+        #G.node['.omp_microtask.9_%0']['value'] = 140735832277024
+        return [G,global_hash_cycle]
 
-
+print time.time()
 a = InstructionAbstraction.AbstractInst(config.indexFilePath, config.tracePath)
 trace = a.export_trace()
 ddg = DDG(trace)
-G = ddg.ddg_construct(ddg.dynamic_trace, a.memcpyRec, a.bitwiseRec)
+[G,global_hash_cycle] = ddg.ddg_construct(ddg.dynamic_trace, a.memcpyRec, a.bitwiseRec)
 #nx.draw_random(G)
 #nx.write_dot(G, "./test.dot")
-pvf_res = pvf.PVF(G, trace, indexMap)
+pvf_res = pvf.PVF(G, trace, indexMap, global_hash_cycle)
 subG = pvf_res.computePVF(config.outputDataSet)
+print time.time()
 #nx.nx.write_dot(subG, "./subgraph.dot")
 #plt.show()
