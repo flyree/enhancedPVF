@@ -76,7 +76,7 @@ class AbstractInst:
                     inst_key.append(item.split(" -> ")[1])
                 if "Opcode" in item:
                     opcode = item.split(": ")[1]
-                if "name" in item:
+                if "name" in item and "Func" not in item:
                     outername = item.split(" ")[1]
                 if "Source" in item:
                     if item != "Source: null":

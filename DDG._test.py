@@ -61,6 +61,9 @@ class DDG:
         # format of funcmap: {funcname:[type/void, arg1, arg2 ...], funcname:[...]}
         flag_phi = 0
         totalbits = 0
+        num_count = len(trace)
+        #print num_count
+        #num_count = 0
         for idx, ddg_inst in enumerate(trace):
             # the following two lists hold the newly added nodes for the current instruction
             # the nodes can be either a operand or a memory address
@@ -71,6 +74,8 @@ class DDG:
             #print ddg_inst.opcode
             # print ddg_inst.input[0]
             # print ddg_inst.output[0]
+            #num_count += 1
+            #print num_count
             for source in ddg_inst.input:
                 op = source.operand
                 if op in rename_mapping:
@@ -171,7 +176,7 @@ class DDG:
                                 print "here"
                             source_node.append(op)
                 else:
-                    if ddg_inst.opcode == "call":
+                    if ddg_inst.opcode == "call" and ddg_inst.funcname not in config.extra:
                         if ddg_inst.funcname in funcMap:
                             op_rep = funcMap[ddg_inst.funcname][ddg_inst.index(op) + 1]
                             rename_mapping[op_rep] = op
@@ -200,6 +205,7 @@ class DDG:
                                 else:
                                     G.add_node(str(int(source_address) + i ), len=itype, size=1, operand0="",cycle = ddg_inst.cycle)
                                     source_node.append(str(int(source_address) + i))
+
                     else:
                         #if op not in G.nodes():
                             if ddg_inst.opcode == "phi":
@@ -348,7 +354,7 @@ class DDG:
                             #G.add_edge(address1, op1, opcode='virtual')
                             G.add_edge(op1, address1, opcode='virtual')
                             # addr_op_map[ddg_inst.address] = op
-                    elif ddg_inst.opcode == "call":
+                    elif ddg_inst.opcode == "call" and ddg_inst.funcname not in config.extra:
                         if ddg_inst.funcname in funcMap:
                             op_rep = funcMap[ddg_inst.funcname][ddg_inst.index(op) + 1]
                             rename_mapping[op_rep] = op
@@ -388,7 +394,7 @@ class DDG:
                         multiInstance[op] = op
                     else:
                         op = multiInstance[op]
-                    if ddg_inst.opcode == "call":
+                    if ddg_inst.opcode == "call" and ddg_inst.funcname not in config.extra:
                         if ddg_inst.funcname in funcMap:
                             op_rep = funcMap[ddg_inst.funcname][ddg_inst.index(op) + 1]
                             rename_mapping[op_rep] = op
@@ -457,6 +463,8 @@ class DDG:
                     if ddg_inst.opcode == "store":
                         global_hash_cycle[int(ddg_inst.cycle)].append(d_node)
                 global_hash_cycle[int(ddg_inst.cycle)].append("opcode"+ddg_inst.opcode)
+            if int(ddg_inst.cycle) == 94987:
+                print "Here!"
 
             #print "##############"
             #print source_node
@@ -479,9 +487,9 @@ class DDG:
         #reduction
         #G.node['.omp_microtask._%2']['value'] = 140733601624680
         #pathfinder
-        G.node['.omp_microtask._@wall']['value'] = 6312208
-        G.node['.omp_microtask._@cols']['value'] = 6312196
-        G.node['.omp_microtask._%2']['value'] = 140733683466480
+        #G.node['.omp_microtask._@wall']['value'] = 6312208
+        #G.node['.omp_microtask._@cols']['value'] = 6312196
+        #G.node['.omp_microtask._%2']['value'] = 140733683466480
         #bfs
         #G.node['.omp_microtask._%2']['value'] = 140736706954416
         #G.node['.omp_microtask._@no_of_nodes']['value'] = 6312160
@@ -497,10 +505,16 @@ class DDG:
         #G.node['.omp_microtask._%2']['value'] =140735058384288
         #G.node['.omp_microtask._%0']['value'] =140735058383200
         #nw
-        #G.node['.omp_microtask._%0']['value'] = 140735832277024
-        #G.node['.omp_microtask._%2']['value'] = 140735832278176
-        #G.node['.omp_microtask.9_%2']['value'] = 140735832278080
-        #G.node['.omp_microtask.9_%0']['value'] = 140735832277024
+        G.node['.omp_microtask._%0']['value'] = 140735832277024
+        G.node['.omp_microtask._%2']['value'] = 140735832278176
+        G.node['.omp_microtask.9_%2']['value'] = 140735832278080
+        G.node['.omp_microtask.9_%0']['value'] = 140735832277024
+        # particle
+        #G.node['.omp_microtask._%2']['value'] = 140733985371832
+        #G.node['.omp_microtask._%0']['value'] = 140733985370592
+         # sc
+        #G.node['.omp_microtask._%2']['value'] = 140735990524520
+        #G.node['.omp_microtask._%0']['value'] = 140733990523424
         return [G,global_hash_cycle]
 
 print time.time()
@@ -511,7 +525,8 @@ ddg = DDG(trace)
 #nx.draw_random(G)
 #nx.write_dot(G, "./test.dot")
 pvf_res = pvf.PVF(G, trace, indexMap, global_hash_cycle)
-subG = pvf_res.computePVF(config.outputDataSet)
+#subG = pvf_res.computePVF(config.outputDataSet)
+pvf_res.computeCrashRate()
 print time.time()
 #nx.nx.write_dot(subG, "./subgraph.dot")
 #plt.show()

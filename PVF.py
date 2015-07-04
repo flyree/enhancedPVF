@@ -11,6 +11,7 @@ from sets import Set
 from multiprocessing import Manager, Process, current_process, Queue
 import math
 import time
+import collections
 aceBits = 0
 crashBits = 0
 stack = []
@@ -20,8 +21,63 @@ finalBits = []
 loadstore = []
 finalBits_control = []
 control_start = 0
-lower_bound = 0
+lower_bound = 1
+f_level = 1
 loadstore_bits = {}
+
+K = 1
+
+def random_subset(iterator, K):
+    result = []
+    N = 0
+
+    for item in iterator:
+        N += 1
+        if len(result) == 0:
+            result.append(item)
+        if len(iterator)/len(result) > K:
+            result.append(item)
+        else:
+            s = int(random.random() * N)
+            if s < len(result):
+                result[s] = item
+
+    return result
+
+def ordered_subset(iterator,K):
+    unordered = {}
+    noplus = []
+    count = 0
+    serialnumber = 0
+    for item in iterator:
+        serialnumber = count
+        if "constant" in item:
+            res = re.findall('constant\d+',item)
+            serialnumber = res[0].split("constant")[1]
+            unordered[serialnumber] = iterator.index(item)
+        else:
+            if "+" in item:
+                serialnumber = int(item.split("+")[1])
+                unordered[serialnumber] = iterator.index(item)
+            else:
+                noplus.append(item)
+    if len(unordered.keys()) == 1:
+        for item in iterator:
+            serialnumber = int(item)
+            unordered[serialnumber] = iterator.index(item)
+    ordered = collections.OrderedDict(sorted(unordered.items()))
+    klist = []
+    klist.extend(noplus)
+    print klist
+    for k,v in ordered.iteritems():
+        klist.append(iterator[v])
+        if len(klist) > len(iterator)*K:
+            break
+    print klist
+    return klist
+
+
+
 
 def isfloat(x):
     try:
@@ -77,6 +133,26 @@ class PVF:
         self.indexMap = indexMap
         self.global_hash_cycle = global_hash_cycle
 
+    def ordered_subset_bycycle(self, iterator,K):
+        unordered = {}
+        noplus = []
+        count = 0
+        serialnumber = 0
+        for item in iterator:
+            index = int(self.G.node[item]['cycle'])
+            if index not in unordered:
+                unordered[index] = iterator.index(item)
+            else:
+                index += random.random()
+                unordered[index] = iterator.index(item)
+        ordered = collections.OrderedDict(sorted(unordered.items()))
+        klist = []
+        for k,v in ordered.iteritems():
+            klist.append(iterator[v])
+            if len(klist) >= len(iterator)*K:
+                break
+        return klist
+
 
     def bfs(self, G, source):
         bfs_nodes = []
@@ -118,6 +194,21 @@ class PVF:
             i += 1
         return bfs_nodes
 
+    def computeCrashRate(self):
+        for node in self.G.nodes_iter():
+            numOut = 0
+            for edge in self.G.out_edges(node):
+                if "virtual" not in self.G.edge[edge[0]][edge[1]]['opcode']:
+                    numOut += 1
+
+            #if numOut == 0:
+            #    print node
+            #    for edge in uG.in_edges(node):
+            #            if "alloca" == uG.edge[edge[0]][edge[1]]['opcode']:
+            #                numOut += 1
+            self.G.node[node]['out_edge'] = numOut
+        self.simplePVF(self.G,self.G)
+
     def computePVF(self, targetList):
 
         #----------------
@@ -126,6 +217,7 @@ class PVF:
         global aceBits
         global crashBits
         global lower_bound
+        global K
         predecessors = []
         predecessors_control = []
         predecessors_memory = []
@@ -174,6 +266,20 @@ class PVF:
         #     print "nodes in predecessors: "+str(len(predecessors))+" "+str(i)+" "+str(len(newlist))
         #     assert(len(predecessors) <= self.G.number_of_nodes())
         #     i += 1
+
+        #------------------------------------
+        # to test the scalability of the ePVF
+        #------------------------------------
+        print "TEST"
+        print len(predecessors_memory)
+        print len(predecessors_control)
+        #print predecessors_memory
+        predecessors_memory = self.ordered_subset_bycycle(predecessors_memory,K)
+        predecessors_control = self.ordered_subset_bycycle(predecessors_control,K)
+        #print predecessors_memory
+        print "TEST"
+        print len(predecessors_memory)
+        print len(predecessors_control)
         ReG = self.G.reverse()
         print len(self.G.nodes())
         p_set = set(predecessors_memory)
@@ -233,6 +339,12 @@ class PVF:
             for edge in uG.out_edges(node):
                 if "virtual" not in uG.edge[edge[0]][edge[1]]['opcode']:
                     numOut += 1
+
+            #if numOut == 0:
+            #    print node
+            #    for edge in uG.in_edges(node):
+            #            if "alloca" == uG.edge[edge[0]][edge[1]]['opcode']:
+            #                numOut += 1
             uG.node[node]['out_edge'] = numOut
         print time.time()
         print
@@ -336,14 +448,14 @@ class PVF:
                         for edge in G.in_edges(op):
                                 opcode_new = G.edge[edge[0]][edge[1]]['opcode']
                                 if opcode_new == "store":
-
-                                    if G.node[edge[0]]['out_edge'] > 0:
-                                        rangeList[edge[0]] = []
-                                        rangeList[edge[0]].append(rangeList[node][0])
-                                        rangeList[edge[0]].append(rangeList[node][1])
-                                        finalBits.append(self.checkRange(G,edge[0],rangeList[node][0], rangeList[node][1], int(G.node[edge[0]]['len'])))
-                                        G.node[edge[0]]['out_edge'] = int(G.node[edge[0]]['out_edge']) -1
-                                        stack4recursion.append(edge[0])
+                                    if G.node[edge[0]]['out_edge'] > 0 or len(G.in_edges(G.node[edge[0]])) == 0:
+                                        if edge[0] not in rangeList:
+                                            rangeList[edge[0]] = []
+                                            rangeList[edge[0]].append(rangeList[node][0])
+                                            rangeList[edge[0]].append(rangeList[node][1])
+                                            finalBits.append(self.checkRange(G,edge[0],rangeList[node][0], rangeList[node][1], int(G.node[edge[0]]['len'])))
+                                            G.node[edge[0]]['out_edge'] = int(G.node[edge[0]]['out_edge']) -1
+                                            stack4recursion.append(edge[0])
             oplist = []
 
     def calculateCrashChain(self, G, opstack):
@@ -527,6 +639,9 @@ class PVF:
                     break
         if node not in rangeList:
             print "here"
+        for item in oplist:
+            if isfloat(G.node[item]['value']):
+                G.node[item]['value'] = int(float(G.node[item]['value']))
         max_range = int(rangeList[node][0])
         min_range = int(rangeList[node][1])
         if opcode == "add" or opcode == "fadd":
@@ -836,6 +951,42 @@ class PVF:
                 G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
                 finalBits.append(self.checkRange(G, oplist[0], max_op, min_op, type))
 
+        if opcode == "call":
+            max_op = max_range
+            min_op = min_range
+            if oplist[0] not in rangeList:
+                rangeList[oplist[0]] = []
+                rangeList[oplist[0]].append(max_op)
+                rangeList[oplist[0]].append(min_op)
+            type = G.node[oplist[0]]['len']
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[0], max_op, min_op, type))
+
+        if opcode == "fptosi":
+            max_op = max_range
+            min_op = min_range
+            if oplist[0] not in rangeList:
+                rangeList[oplist[0]] = []
+                rangeList[oplist[0]].append(max_op)
+                rangeList[oplist[0]].append(min_op)
+            type = G.node[oplist[0]]['len']
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[0], max_op, min_op, type))
+
+        if opcode == "sitofp":
+            max_op = max_range
+            min_op = min_range
+            if oplist[0] not in rangeList:
+                rangeList[oplist[0]] = []
+                rangeList[oplist[0]].append(max_op)
+                rangeList[oplist[0]].append(min_op)
+            type = G.node[oplist[0]]['len']
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                finalBits.append(self.checkRange(G, oplist[0], max_op, min_op, type))
+
 
 
     def checkRange(self,G, node, max_f, min_f, type):
@@ -864,7 +1015,11 @@ class PVF:
         #        count += pos
         #return
         counter = 0
-        address = int(G.node[node]['value'])
+        temp_s = G.node[node]['value']
+        if isfloat(temp_s):
+            address = int(float(temp_s))+1
+        else:
+            address = int(G.node[node]['value'])
         for i in range(type):
             mask = (1 << i)
             new = address
@@ -923,7 +1078,7 @@ class PVF:
                 #    continue
                 res = int(G.node[op]['len'])
                 if opcode in config.floatingPoint:
-                    res = int(res*0.1)
+                    res = int(res)*f_level
                 bb += int(res)
             if opcode == "mul" or opcode == "fmul":
                     for index, op in enumerate(oplist):
@@ -948,7 +1103,7 @@ class PVF:
                      bb += bin(base).count("1")
             if opcode == "shl" or opcode == "lshr" or opcode == "ashr":
                 size = int(G.node[oplist[0]]['len'])
-                shift = int(G.node[oplist[1]['value']])
+                shift = int(G.node[oplist[1]]['value'])
                 bb += math.log(size,2)
             #     pass
             #for op in oplist:
@@ -973,6 +1128,8 @@ class PVF:
                         index = G.node[op]['mem']
                         range_mem = self.memory[index]
                         address = op.split("+")[0]
+                        if "14189680" in address:
+                            print "load here"
                         res = G.node[op]['len']
                         type = int(res)
                         bb += type
@@ -1083,6 +1240,8 @@ class PVF:
                     index = G.node[node]['mem']
                     range_mem = self.memory[index]
                     address = node.split("+")[0]
+                    if "14189680" in address:
+                            print "store here"
                     res = G.node[node]['len']
                     type = int(res)
                     bb += type
@@ -1196,7 +1355,9 @@ class PVF:
         elif opcode in config.otherInst:
             if opcode == "icmp" or opcode == "fcmp":
                 predicate = G.edge[oplist[0]][node]['pred']
-                bb += self.checkCMPRange(G, refG, oplist, predicate)
+                ## need to consider the real result of the comparison, shouldn't matter too much
+                bool_res = int(G.node[node]['value'])
+                bb += self.checkCMPRange(G, refG, oplist, predicate, bool_res)
             else:
                 if opcode == "phi":
                     pass
@@ -1263,7 +1424,7 @@ class PVF:
 
 
 
-    def checkCMPRange(self,G,refG,oplist,predicate):
+    def checkCMPRange(self,G,refG,oplist,predicate, bool_res):
         count_1 = 0
         count_2 = 0
         global finalBits_control
@@ -1275,15 +1436,23 @@ class PVF:
                 mask = (1 << i)
                 new = value1
                 new = new ^ mask
-                if new < value2:
-                    count_1 += 1
+                if bool_res >= 0:
+                    if new < value2:
+                        count_1 += 1
+                else:
+                    if new >= value2:
+                        count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
-                if value1 < new:
-                    count_2 += 1
+                if bool_res >= 0:
+                    if value1 < new:
+                        count_2 += 1
+                else:
+                    if value1 >= new:
+                        count_2 += 1
         if int(predicate) == 41:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1291,15 +1460,23 @@ class PVF:
                 mask = (1 << i)
                 new = value1
                 new = new ^ mask
-                if new <= value2:
-                    count_1 += 1
+                if bool_res >= 0:
+                    if new <= value2:
+                        count_1 += 1
+                else:
+                    if new > value2:
+                        count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
-                if value1 <= new:
-                    count_2 += 1
+                if bool_res >= 0:
+                    if value1 <= new:
+                        count_2 += 1
+                else:
+                    if value1 > new:
+                        count_2 += 1
         if int(predicate) == 39:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1307,15 +1484,23 @@ class PVF:
                 mask = (1 << i)
                 new = value1
                 new = new ^ mask
-                if new >= value2:
-                    count_1 += 1
+                if bool_res >= 0:
+                    if new >= value2:
+                        count_1 += 1
+                else:
+                    if new < value2:
+                        count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
-                if value1 >= new:
-                    count_2 += 1
+                if bool_res >= 0:
+                    if value1 >= new:
+                        count_2 += 1
+                else:
+                    if value1 < new:
+                        count_2 += 1
         if int(predicate) == 32:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1323,15 +1508,23 @@ class PVF:
                 mask = (1 << i)
                 new = value1
                 new = new ^ mask
-                if new == value2:
-                    count_1 += 1
+                if bool_res >= 0:
+                    if new == value2:
+                        count_1 += 1
+                else:
+                    if new != value2:
+                        count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
-                if value1 == new:
-                    count_2 += 1
+                if bool_res >= 0:
+                    if value1 == new:
+                        count_2 += 1
+                else:
+                    if value1 != new:
+                        count_2 += 1
         if int(predicate) == 33:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1339,15 +1532,23 @@ class PVF:
                 mask = (1 << i)
                 new = value1
                 new = new ^ mask
-                if new != value2:
-                    count_1 += 1
+                if bool_res >= 0:
+                    if new != value2:
+                        count_1 += 1
+                else:
+                    if new == value2:
+                        count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
-                if value1 != new:
-                    count_2 += 1
+                if bool_res >= 0:
+                    if value1 != new:
+                        count_2 += 1
+                else:
+                    if value1 == new:
+                        count_2 += 1
         if int(predicate) == 38:
             value1 = int(G.node[oplist[0]]['value'])
             value2 = int(G.node[oplist[1]]['value'])
@@ -1355,15 +1556,23 @@ class PVF:
                 mask = (1 << i)
                 new = value1
                 new = new ^ mask
-                if new >= value2:
-                    count_1 += 1
+                if bool_res >= 0:
+                    if new >= value2:
+                        count_1 += 1
+                else:
+                    if new < value2:
+                        count_1 += 1
             #if "constant" not in oplist[1]:
             for i in range(G.node[oplist[1]]['len']):
                 mask = (1 << i)
                 new = value2
                 new = new ^ mask
-                if value1 >= new:
-                    count_2 += 1
+                if bool_res >= 0:
+                    if value1 >= new:
+                        count_2 += 1
+                else:
+                    if value1 < new:
+                        count_2 += 1
 
         oplist_new = []
         opcode = ""
@@ -1379,85 +1588,85 @@ class PVF:
         icmpbits[count_2].append(oplist[1])
         finalBits_control.append(count_1)
         finalBits_control.append(count_2)
-        # while len(stack4recursion) != 0:
-        #     node = stack4recursion.pop()
-        #     for edge in G.in_edges(node):
-        #         if "virtual" not in G.edge[edge[0]][edge[1]]['opcode']:
-        #             oplist_new.append(edge[0])
-        #             opcode = G.edge[edge[0]][edge[1]]['opcode']
-        #     if opcode != "load" and opcode != "store":
-        #         for op in oplist_new:
-        #                 #self.getParent4CrashChain(G, op, cbits)
-        #                 if op not in refG:
-        #                     for key in icmpbits:
-        #                         if G.node[op]['out_edge'] > 0:
-        #                             if node in icmpbits[key]:
-        #                                 if opcode == "trunc":
-        #                                     size = G.node[op]['len'] - G.node[node]['len']+key
-        #                                     final -= key*(len(icmpbits[key]))
-        #                                     icmpbits.pop(key)
-        #                                     if size not in icmpbits:
-        #                                         icmpbits[size] = []
-        #                                         icmpbits[size].append(op)
-        #                                         finalBits_control.append(size)
-        #                                     else:
-        #                                         icmpbits[size].append(op)
-        #                                         finalBits_control.append(size)
-        #
-        #                                 elif opcode == "sext":
-        #                                     size = G.node[node]['len'] - G.node[op]['len']
-        #                                     if key >= size:
-        #                                         final -= key*(len(icmpbits[key]))
-        #                                         icmpbits.pop(key)
-        #                                         if size not in icmpbits:
-        #                                             icmpbits[size] = []
-        #                                             icmpbits[size].append(op)
-        #                                             finalBits_control.append(size)
-        #                                         else:
-        #                                             icmpbits[size].append(op)
-        #                                             finalBits_control.append(size)
-        #                                     else:
-        #                                         icmpbits[key].append(op)
-        #                                         finalBits_control.append(key)
-        #
-        #                                 else:
-        #                                     icmpbits[key].append(op)
-        #                                     finalBits_control.append(key)
-        #                             G.node[op]['out_edge'] = G.node[op]['out_edge'] -1
-        #                             stack4recursion.append(op)
-        #                             break
-        #                 else:
-        #                     if G.node[op]['out_edge'] > 0:
-        #                         for key in icmpbits:
-        #                             if node in icmpbits[key]:
-        #                                 icmpbits[key].append(op)
-        #                                 finalBits_control.append(key)
-        #                                 stack4recursion.append(op)
-        #                                 G.node[op]['out_edge'] = G.node[op]['out_edge'] -1
-        #     else:
-        #         if opcode == "load":
-        #             for op in oplist_new:
-        #                 for edge in G.in_edges(op):
-        #                         opcode_new = G.edge[edge[0]][edge[1]]['opcode']
-        #                         if opcode_new == "store":
-        #
-        #                             if edge[0] not in refG:
-        #                                 if G.node[edge[0]]['out_edge'] > 0:
-        #                                     for key in icmpbits:
-        #                                         if node in icmpbits[key]:
-        #                                             icmpbits[key].append(edge[0])
-        #                                             finalBits_control.append(key)
-        #                                             stack4recursion.append(edge[0])
-        #                                             G.node[edge[0]]['out_edge'] = G.node[edge[0]]['out_edge'] -1
-        #                             else:
-        #                                 if G.node[edge[0]]['out_edge'] > 0:
-        #                                     for key in icmpbits:
-        #                                          if node in icmpbits[key]:
-        #                                              icmpbits[key].append(edge[0])
-        #                                              finalBits_control.append(key)
-        #                                              G.node[edge[0]]['out_edge'] = G.node[edge[0]]['out_edge'] -1
-        #                                              stack4recursion.append(edge[0])
-        #     oplist_new = []
+        while len(stack4recursion) != 0:
+            node = stack4recursion.pop()
+            for edge in G.in_edges(node):
+                if "virtual" not in G.edge[edge[0]][edge[1]]['opcode']:
+                    oplist_new.append(edge[0])
+                    opcode = G.edge[edge[0]][edge[1]]['opcode']
+            if opcode != "load" and opcode != "store":
+                for op in oplist_new:
+                        #self.getParent4CrashChain(G, op, cbits)
+                        if op not in refG:
+                            for key in icmpbits:
+                                if G.node[op]['out_edge'] > 0:
+                                    if node in icmpbits[key]:
+                                        if opcode == "trunc":
+                                            size = G.node[op]['len'] - G.node[node]['len']+key
+                                            final -= key*(len(icmpbits[key]))
+                                            icmpbits.pop(key)
+                                            if size not in icmpbits:
+                                                icmpbits[size] = []
+                                                icmpbits[size].append(op)
+                                                finalBits_control.append(size)
+                                            else:
+                                                icmpbits[size].append(op)
+                                                finalBits_control.append(size)
+
+                                        elif opcode == "sext":
+                                            size = G.node[node]['len'] - G.node[op]['len']
+                                            if key >= size:
+                                                final -= key*(len(icmpbits[key]))
+                                                icmpbits.pop(key)
+                                                if size not in icmpbits:
+                                                    icmpbits[size] = []
+                                                    icmpbits[size].append(op)
+                                                    finalBits_control.append(size)
+                                                else:
+                                                    icmpbits[size].append(op)
+                                                    finalBits_control.append(size)
+                                            else:
+                                                icmpbits[key].append(op)
+                                                finalBits_control.append(key)
+
+                                        else:
+                                            icmpbits[key].append(op)
+                                            finalBits_control.append(key)
+                                    G.node[op]['out_edge'] = G.node[op]['out_edge'] -1
+                                    stack4recursion.append(op)
+                                    break
+                        else:
+                            if G.node[op]['out_edge'] > 0:
+                                for key in icmpbits:
+                                    if node in icmpbits[key]:
+                                        icmpbits[key].append(op)
+                                        finalBits_control.append(key)
+                                        stack4recursion.append(op)
+                                        G.node[op]['out_edge'] = G.node[op]['out_edge'] -1
+            else:
+                if opcode == "load":
+                    for op in oplist_new:
+                        for edge in G.in_edges(op):
+                                opcode_new = G.edge[edge[0]][edge[1]]['opcode']
+                                if opcode_new == "store":
+
+                                    if edge[0] not in refG:
+                                        if G.node[edge[0]]['out_edge'] > 0:
+                                            for key in icmpbits:
+                                                if node in icmpbits[key]:
+                                                    icmpbits[key].append(edge[0])
+                                                    finalBits_control.append(key)
+                                                    stack4recursion.append(edge[0])
+                                                    G.node[edge[0]]['out_edge'] = G.node[edge[0]]['out_edge'] -1
+                                    else:
+                                        if G.node[edge[0]]['out_edge'] > 0:
+                                            for key in icmpbits:
+                                                 if node in icmpbits[key]:
+                                                     icmpbits[key].append(edge[0])
+                                                     finalBits_control.append(key)
+                                                     G.node[edge[0]]['out_edge'] = G.node[edge[0]]['out_edge'] -1
+                                                     stack4recursion.append(edge[0])
+            oplist_new = []
         return final
 
     def simplePVF(self,G,refG):
@@ -1528,7 +1737,8 @@ class PVF:
         print ldst
         print "SDC bits"
         print b
-        self.crashRecall(G,config.crashfile)
+        print (b-ldst-crash-control)
+        #self.crashRecall(G,config.crashfile)
 
 
     def crashRecall(self,G,cfile):
@@ -1536,6 +1746,8 @@ class PVF:
         global loadstore_bits
         count_crash = 0
         count_pre = 0
+        #print "LOL"
+        #print self.global_hash_cycle
         with open(cfile,"r") as cf:
             lines = cf.readlines()
             for line in lines:
@@ -1546,6 +1758,8 @@ class PVF:
                     bit = int(re.findall('fi_bit=\d+',line)[0].split("=")[1])
                     flag = 0
                     flag1 = 0
+                    if int(cycle)+1 not in self.global_hash_cycle:
+                        continue
                     if "store" in self.global_hash_cycle[int(cycle)+1][len(self.global_hash_cycle[int(cycle)+1])-1] and "constant" in self.global_hash_cycle[int(cycle)+1][0]:
                         reg_index = '1'
                     for node in self.global_hash_cycle[int(cycle)+1]:
@@ -1568,7 +1782,9 @@ class PVF:
                                                 print "wrong bit in ldst"
                                         else:
                                             count_crash+=1
-                                            print "here"
+                                            print "control flow effect"
+                                            print cycle
+                                            print node
                                     else:
                                         flag += 1
 
@@ -1594,6 +1810,8 @@ class PVF:
                         else:
                                 flag1 += 1
                     if flag1 == len(self.global_hash_cycle[int(cycle)+1]):
+                        print "CYCLE"
+                        print cycle
                         print "Wrong"
         print count_pre
         print count_crash
