@@ -39,10 +39,11 @@ def binary_search(a, x, lo=0, hi=None):   # can't use a to specify default for h
 class DDG:
     @classmethod
     def __init__(self, trace):
-        assert(len(trace) == 3)
+        assert(len(trace) == 4)
         self.dynamic_trace = trace[0]
         self.remap = trace[1]
         self.memory = trace[2]
+        self.cycle_index_lookup = trace[3]
 
     # ##
     # A node can be 1. source 2. dest 3. opcode
@@ -463,9 +464,6 @@ class DDG:
                     if ddg_inst.opcode == "store":
                         global_hash_cycle[int(ddg_inst.cycle)].append(d_node)
                 global_hash_cycle[int(ddg_inst.cycle)].append("opcode"+ddg_inst.opcode)
-            if int(ddg_inst.cycle) == 94987:
-                print "Here!"
-
             #print "##############"
             #print source_node
             #print dest_node
@@ -524,9 +522,9 @@ ddg = DDG(trace)
 [G,global_hash_cycle] = ddg.ddg_construct(ddg.dynamic_trace, a.memcpyRec, a.bitwiseRec)
 #nx.draw_random(G)
 #nx.write_dot(G, "./test.dot")
-pvf_res = pvf.PVF(G, trace, indexMap, global_hash_cycle)
-#subG = pvf_res.computePVF(config.outputDataSet)
-pvf_res.computeCrashRate()
+pvf_res = pvf.PVF(G, trace, indexMap, global_hash_cycle,ddg.cycle_index_lookup)
+subG = pvf_res.computePVF(config.outputDataSet)
+#pvf_res.computeCrashRate()
 print time.time()
 #nx.nx.write_dot(subG, "./subgraph.dot")
 #plt.show()

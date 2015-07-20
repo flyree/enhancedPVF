@@ -27,6 +27,8 @@ loadstore_bits = {}
 
 K = 1
 
+ranking = {}
+
 def random_subset(iterator, K):
     result = []
     N = 0
@@ -121,7 +123,7 @@ def grouper(n, iterable, fillvalue=None):
     return izip_longest(fillvalue=fillvalue, *args)
 
 class PVF:
-    def __init__(self, G, trace, indexMap,global_hash_cycle):
+    def __init__(self, G, trace, indexMap,global_hash_cycle, cycle_index_lookup):
         self.G = G
         assert(len(trace) == 3)
         self.trace = trace[0]
@@ -132,6 +134,7 @@ class PVF:
         self.structMap = structMap
         self.indexMap = indexMap
         self.global_hash_cycle = global_hash_cycle
+        self.cycle_index_lookup = cycle_index_lookup
 
     def ordered_subset_bycycle(self, iterator,K):
         unordered = {}
@@ -273,13 +276,14 @@ class PVF:
         print "TEST"
         print len(predecessors_memory)
         print len(predecessors_control)
+        #No need for selecting
         #print predecessors_memory
-        predecessors_memory = self.ordered_subset_bycycle(predecessors_memory,K)
-        predecessors_control = self.ordered_subset_bycycle(predecessors_control,K)
+        #predecessors_memory = self.ordered_subset_bycycle(predecessors_memory,K)
+        #predecessors_control = self.ordered_subset_bycycle(predecessors_control,K)
         #print predecessors_memory
-        print "TEST"
-        print len(predecessors_memory)
-        print len(predecessors_control)
+        #print "TEST"
+        #print len(predecessors_memory)
+        #print len(predecessors_control)
         ReG = self.G.reverse()
         print len(self.G.nodes())
         p_set = set(predecessors_memory)
@@ -623,6 +627,7 @@ class PVF:
 
 
     def getRange4OPs(self, G, oplist, opcode, rangeList, finalBits):
+        global ranking
         global control_start
         node = ""
         if len(oplist) == 1:
@@ -646,6 +651,10 @@ class PVF:
         min_range = int(rangeList[node][1])
         if opcode == "add" or opcode == "fadd":
             assert(len(oplist) == 2)
+            cycle = int(G.node[node]['cycle'])
+            _index = self.cycle_index_lookup[cycle]
+            crash_inst = 0
+            ace_inst = 0
             for i in range(2):
                     max_op = max_range - int(G.node[oplist[1-i]]['value'])
                     min_op = min_range - int(G.node[oplist[1-i]]['value'])
@@ -654,13 +663,25 @@ class PVF:
                         rangeList[oplist[i]].append(max_op)
                         rangeList[oplist[i]].append(min_op)
                     type = G.node[oplist[i]]['len']
+                    ace_inst += type
                     #if "constant" not in oplist[i]:
                     if int(G.node[oplist[i]]['out_edge']) > 0:
                         G.node[oplist[i]]['out_edge'] = int(G.node[oplist[i]]['out_edge']) -1
-                        finalBits.append(self.checkRange(G,oplist[i],max_op, min_op, type))
+                        crash_tmp = self.checkRange(G,oplist[i],max_op, min_op, type)
+                        finalBits.append(crash_tmp)
+                        crash_inst += crash_tmp
+            if _index in ranking:
+                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+            else:
+                ranking[_index] = []
+                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
 
         if opcode == "sub" or opcode == "fsub":
+            cycle = int(G.node[node]['cycle'])
+            _index = self.cycle_index_lookup[cycle]
+            crash_inst = 0
+            ace_inst = 0
             assert(len(oplist) == 2)
             # the first operand
             max_op = max_range + int(G.node[oplist[1]]['value'])
@@ -670,10 +691,13 @@ class PVF:
                 rangeList[oplist[0]].append(max_op)
                 rangeList[oplist[0]].append(min_op)
             type = G.node[oplist[0]]['len']
+            ace_inst += type
             #if "constant" not in oplist[0]:
             if int(G.node[oplist[0]]['out_edge']) > 0:
                 G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
-                finalBits.append(self.checkRange(G, oplist[0],max_op, min_op, type))
+                crash_tmp = self.checkRange(G, oplist[0],max_op, min_op, type)
+                finalBits.append(crash_tmp)
+                crash_inst += crash_tmp
             max_op = int(G.node[oplist[0]]['value']) - min_range
             min_op = int(G.node[oplist[0]]['value']) - max_range
             if oplist[1] not in rangeList:
@@ -681,12 +705,24 @@ class PVF:
                 rangeList[oplist[1]].append(max_op)
                 rangeList[oplist[1]].append(min_op)
             type = G.node[oplist[1]]['len']
+            ace_inst += type
             #if "constant" not in oplist[1]:
             if int(G.node[oplist[1]]['out_edge']) > 0:
                 G.node[oplist[1]]['out_edge'] = int(G.node[oplist[1]]['out_edge']) -1
-                finalBits.append(self.checkRange(G, oplist[1],max_op, min_op, type))
+                crash_tmp = self.checkRange(G, oplist[1],max_op, min_op, type)
+                finalBits.append(crash_tmp)
+                crash_inst += crash_tmp
+            if _index in ranking:
+                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+            else:
+                ranking[_index] = []
+                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "fmul" or opcode == "mul":
+            cycle = int(G.node[node]['cycle'])
+            _index = self.cycle_index_lookup[cycle]
+            crash_inst = 0
+            ace_inst = 0
             assert(len(oplist) == 2)
             for i in range(2):
                     if int(G.node[oplist[1-i]]['value']) == 0:
@@ -700,10 +736,18 @@ class PVF:
                         rangeList[oplist[i]].append(max_op)
                         rangeList[oplist[i]].append(min_op)
                     type = G.node[oplist[i]]['len']
+                    ace_inst += type
                     #if "constant" not in oplist[i]:
                     if int(G.node[oplist[i]]['out_edge']) > 0:
                         G.node[oplist[i]]['out_edge'] = int(G.node[oplist[i]]['out_edge']) -1
-                        finalBits.append(self.checkRange(G,oplist[i],max_op, min_op, type))
+                        crash_tmp = self.checkRange(G,oplist[i],max_op, min_op, type)
+                        finalBits.append(crash_tmp)
+                        crash_inst += crash_tmp
+            if _index in ranking:
+                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+            else:
+                ranking[_index] = []
+                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "udiv"  or opcode == "sdiv" or opcode == "fdiv":
             assert(len(oplist) == 2)
@@ -1128,8 +1172,6 @@ class PVF:
                         index = G.node[op]['mem']
                         range_mem = self.memory[index]
                         address = op.split("+")[0]
-                        if "14189680" in address:
-                            print "load here"
                         res = G.node[op]['len']
                         type = int(res)
                         bb += type
@@ -1220,10 +1262,10 @@ class PVF:
                         #if len(G.in_edges(op)) == 0:
                         #    self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
                         #removed += removed1
-                        if int(G.node[op]['out_edge']) > 0:
-                            loadstore.append(removed1)
-                            G.node[op]['out_edge'] = int(G.node[op]['out_edge']) -1
-                            loadstore_bits[op] = bitlist
+                        #if int(G.node[op]['out_edge']) > 0:
+                        loadstore.append(removed1)
+                        G.node[op]['out_edge'] = int(G.node[op]['out_edge']) -1
+                        loadstore_bits[op] = bitlist
                         chain = 0
                         crash = 0
                         for i in finalBits:
@@ -1240,8 +1282,6 @@ class PVF:
                     index = G.node[node]['mem']
                     range_mem = self.memory[index]
                     address = node.split("+")[0]
-                    if "14189680" in address:
-                            print "store here"
                     res = G.node[node]['len']
                     type = int(res)
                     bb += type
@@ -1327,10 +1367,10 @@ class PVF:
                     #if len(G.in_edges(node)) == 0:
                     #    self.checkRange(G,start_node,max,min,int(G.node[start_node]['len']))
                     #removed += removed1
-                    if int(G.node[node]['out_edge']) > 0:
-                        loadstore.append(removed1)
-                        G.node[node]['out_edge'] = int(G.node[node]['out_edge']) -1
-                        loadstore_bits[node] = bitlist
+                    #if int(G.node[node]['out_edge']) > 0:
+                    loadstore.append(removed1)
+                    G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                    loadstore_bits[node] = bitlist
                     chain = 0
                     crash = 0
                     for i in finalBits:
@@ -1345,11 +1385,15 @@ class PVF:
                     stack = []
 
         elif opcode in config.castInst:
-            for op in oplist:
+            if opcode == "fptrunc" or opcode == "trunc":
+                res = G.node[node]['len']
+                bb += res
+            else:
+                for op in oplist:
                 #if "constant" in op:
                 #    continue
-                res = G.node[op]['len']
-                bb += int(res)
+                    res = G.node[op]['len']
+                    bb += int(res)
             #res = G.node[node]['len']
             #b += int(res)
         elif opcode in config.otherInst:

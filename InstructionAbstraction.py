@@ -183,6 +183,7 @@ class AbstractInst:
         memory = {}
         Data_item = namedtuple("data_item", "operand type value")
         _count = 0
+        cycle_index_lookup = {}
         for item in self.dynamic_trace:
             if _count == 2:
                 break
@@ -200,6 +201,9 @@ class AbstractInst:
                 res = re.findall("[-+]?[0-9]*\.?[0-9]+", item_new)
                 cycle = res[len(res)-1]
                 res.remove(cycle)
+                _index = int(res[0])
+                if res[1] != "2" and res[1] != "44" and res[2] != "26":
+                    cycle_index_lookup[int(cycle)] = _index
                 value = copy.deepcopy(inst_map[res[0]])
                 assert isinstance(value, DDGInst)
                 if len(value.output)>0:
@@ -240,6 +244,7 @@ class AbstractInst:
         ret.append(trace)
         ret.append(remap)
         ret.append(memory)
+        ret.append(cycle_index_lookup)
         return ret
 
     def processMemory(self, memoryBoundary):
