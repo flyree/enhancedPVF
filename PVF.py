@@ -25,6 +25,7 @@ lower_bound = 1
 f_level = 1
 loadstore_bits = {}
 
+pop = 0.2
 K = 1
 
 ranking = {}
@@ -1873,6 +1874,7 @@ class PVF:
         global loadstore
         global finalBits_control
         global control_start
+        globak pop
         b = 0
         count = 0
         for node in G.nodes_iter():
@@ -1941,6 +1943,14 @@ class PVF:
         f_random = open("random_duplication","w")
         f_hotpath = open("hotpath_duplication","w")
         f_epvf = open("epvf_duplication","w")
+        for item in ranking:
+            f_full.write(str(item)+"\n")
+        f_full.close()
+        random_list = random.sample(ranking.keys(),int(pop*len(ranking)))
+        for item in random_list:
+            f_random.write(str(item)+"w")
+        f_random.close()
+        
         #self.crashRecall(G,config.crashfile)
 
 
