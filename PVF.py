@@ -1257,6 +1257,7 @@ class PVF:
         global loadstore_bits
         bb = 0
         removed = 0
+        removed_ldst = 0
         if opcode in config.computationInst:
             for op in oplist:
                 #if "constant" in op:
@@ -1405,6 +1406,7 @@ class PVF:
                         #removed += removed1
                         #if int(G.node[op]['out_edge']) > 0:
                         loadstore.append(removed1)
+                        removed_ldst = removed1
                         G.node[op]['out_edge'] = int(G.node[op]['out_edge']) -1
                         loadstore_bits[op] = bitlist
                         chain = 0
@@ -1510,6 +1512,7 @@ class PVF:
                     #removed += removed1
                     #if int(G.node[node]['out_edge']) > 0:
                     loadstore.append(removed1)
+                    removed_ldst = removed1
                     G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
                     loadstore_bits[node] = bitlist
                     chain = 0
@@ -1557,6 +1560,16 @@ class PVF:
         else:
             print opcode
             print "WRONG"
+        _cycle = int(G.node[node]['cycle'])
+        _index = self.cycle_index_lookup[int(G.node[node]['cycle'])]
+        ace_inst = 0
+        for op in oplist:
+            ace_inst += int(G.node[op]['len'])
+        if _index in ranking:
+            ranking[_index].append([_cycle,bb,ace_inst])
+        else:
+            ranking[_index] = []
+            ranking[_index].append([_cycle,bb,ace_inst])
         #if opcode not in config.memoryInst:
         #    bb += G.node[node]['len']
         #print b
@@ -1923,6 +1936,11 @@ class PVF:
         print "SDC bits"
         print b
         print (b-ldst-crash-control)
+        # generating duplication candidates
+        f_full = open("full_duplication","w")
+        f_random = open("random_duplication","w")
+        f_hotpath = open("hotpath_duplication","w")
+        f_epvf = open("epvf_duplication","w")
         #self.crashRecall(G,config.crashfile)
 
 
