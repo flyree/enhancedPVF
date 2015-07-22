@@ -12,6 +12,7 @@ from multiprocessing import Manager, Process, current_process, Queue
 import math
 import time
 import collections
+from collections import OrderedDict
 aceBits = 0
 crashBits = 0
 stack = []
@@ -1874,7 +1875,7 @@ class PVF:
         global loadstore
         global finalBits_control
         global control_start
-        globak pop
+        global pop
         b = 0
         count = 0
         for node in G.nodes_iter():
@@ -1950,7 +1951,31 @@ class PVF:
         for item in random_list:
             f_random.write(str(item)+"w")
         f_random.close()
-        
+        hotpath_index = OrderedDict(sorted(ranking.viewitems(), key=lambda x: len(x[1]), reverse=True))
+        count = 0
+        for item in hotpath_index:
+            f_hotpath.write(str(item)+"\n")
+            count += 1
+            if count > int(pop*len(ranking)):
+                break
+        f_hotpath.close()
+        epvf_dict = {}
+        count = 0
+        for key, value in ranking:
+            ace = 0
+            total = 0
+            for i in value:
+                ace += i[1]
+                total += i[2]
+            epvf = float(ace)/total
+            epvf_dict[key] = epvf
+        ordered_epvf_dict = OrderedDict(sorted(epvf_dict.viewitems(), key=lambda x: x[1]),reverse = True)
+        for item in ordered_epvf_dict:
+            f_epvf.write(str(item)+"\n")
+            count += 1
+            if count > len(ranking):
+                break
+        f_epvf.close()
         #self.crashRecall(G,config.crashfile)
 
 
