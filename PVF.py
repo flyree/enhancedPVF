@@ -127,7 +127,7 @@ def grouper(n, iterable, fillvalue=None):
 class PVF:
     def __init__(self, G, trace, indexMap,global_hash_cycle, cycle_index_lookup):
         self.G = G
-        assert(len(trace) == 3)
+        assert(len(trace) == 4)
         self.trace = trace[0]
         self.remap = trace[1]
         self.memory = trace[2]
@@ -1940,10 +1940,10 @@ class PVF:
         print b
         print (b-ldst-crash-control)
         # generating duplication candidates
-        f_full = open("full_duplication","w")
-        f_random = open("random_duplication","w")
-        f_hotpath = open("hotpath_duplication","w")
-        f_epvf = open("epvf_duplication","w")
+        f_full = open(os.path.join(config.duplication,"full_duplication"),"w")
+        f_random = open(os.path.join(config.duplication,"random_duplication"),"w")
+        f_hotpath = open(os.path.join(config.duplication,"hotpath_duplication"),"w")
+        f_epvf = open(os.path.join(config.duplication,"epvf_duplication"),"w")
         for item in ranking:
             f_full.write(str(item)+"\n")
         f_full.close()
