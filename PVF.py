@@ -1972,7 +1972,7 @@ class PVF:
             f_hotpath = open(os.path.join(config.duplication,"hotpath_duplication"+"_"+str(i)),"w")
             count = 0
             for item in hotpath_index:
-                f_hotpath.write(str(item)+"\n")
+                f_hotpath.write(str(item[0])+"\n")
                 count += 1
                 if count > int(i*len(ranking)):
                     break
@@ -1980,7 +1980,7 @@ class PVF:
             count = 0
             f_epvf = open(os.path.join(config.duplication,"epvf_duplication"+"_"+str(i)),"w")
             for item in ordered_epvf_list:
-                f_epvf.write(str(item)+"\n")
+                f_epvf.write(str(item[0])+"\n")
                 count += 1
                 if count > int(i*len(ranking)):
                     break

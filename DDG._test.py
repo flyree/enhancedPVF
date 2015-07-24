@@ -497,16 +497,16 @@ class DDG:
         #G.node['.omp_microtask.1_%2']['value'] = 140737436492192
         #G.node['.omp_microtask.1_%0']['value'] = 140737436493264
         #lavaMD
-        G.node['.omp_microtask._%0']['value'] = 140736284336096
-        G.node['.omp_microtask._%2']['value'] = 140736284337168
+        #G.node['.omp_microtask._%0']['value'] = 140736284336096
+        #G.node['.omp_microtask._%2']['value'] = 140736284337168
         #mm
-        #G.node['.omp_microtask._%2']['value'] =140735058384288
-        #G.node['.omp_microtask._%0']['value'] =140735058383200
+        G.node['.omp_microtask._%2']['value'] =140736331785136
+        G.node['.omp_microtask._%0']['value'] =140736331784032
         #nw
-        #G.node['.omp_microtask._%0']['value'] = 140735832277024
-        #G.node['.omp_microtask._%2']['value'] = 140735832278176
-        #G.node['.omp_microtask.9_%2']['value'] = 140735832278080
-        #G.node['.omp_microtask.9_%0']['value'] = 140735832277024
+        #G.node['.omp_microtask._%0']['value'] = 140737163305440
+        #G.node['.omp_microtask._%2']['value'] = 140737163306576
+        #G.node['.omp_microtask.9_%2']['value'] = 140737163306480
+        #G.node['.omp_microtask.9_%0']['value'] = 140737163305440
         # particle
         #G.node['.omp_microtask._%2']['value'] = 140733985371832
         #G.node['.omp_microtask._%0']['value'] = 140733985370592

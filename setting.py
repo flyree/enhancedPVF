@@ -10,15 +10,15 @@
 #Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
 #gepsize = 4
 ### lavaMD
-IRpath = "/Users/bofang/Documents/Benchmarks/lavaMD/lavaMD.ll"
-indexFilePath = "/Users/bofang/Documents/Benchmarks/lavaMD/lavaMD_mapping"
-tracePath = "/Users/bofang/Documents/Benchmarks/lavaMD/llfi.stat.trace.txt.prof.0"
-outputDataSet = ['.omp_microtask._%v114','.omp_microtask._%x121','.omp_microtask._%y128','.omp_microtask._%z135']
-crashfile = "/Users/bofang/Documents/Benchmarks/lavaMD/crash"
-precision_file = "/Users/bofang/Documents/Benchmarks/lavaMD/precision"
-tid = "18608"
-Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
-duplication = "/Users/bofang/Documents/Benchmarks/lavaMD/"
+#IRpath = "/Users/bofang/Documents/Benchmarks/lavaMD/lavaMD.ll"
+#indexFilePath = "/Users/bofang/Documents/Benchmarks/lavaMD/lavaMD_mapping"
+#tracePath = "/Users/bofang/Documents/Benchmarks/lavaMD/llfi.stat.trace.txt.prof.0"
+#outputDataSet = ['.omp_microtask._%v114','.omp_microtask._%x121','.omp_microtask._%y128','.omp_microtask._%z135']
+#crashfile = "/Users/bofang/Documents/Benchmarks/lavaMD/crash"
+#precision_file = "/Users/bofang/Documents/Benchmarks/lavaMD/precision"
+#tid = "18608"
+#Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
+#duplication = "/Users/bofang/Documents/Benchmarks/lavaMD/"
 
 ### particle
 #IRpath = "/Users/bofang/PycharmProjects/PVF/particle/particle_filter.ll"
@@ -39,14 +39,15 @@ duplication = "/Users/bofang/Documents/Benchmarks/lavaMD/"
 #recision_file = "/Users/bofang/PycharmProjects/PVF/sc/precision"
 
 ### nw
-#IRpath = "/Users/bofang/PycharmProjects/PVF/nw/needle.ll"
-#indexFilePath = "/Users/bofang/PycharmProjects/PVF/nw/needle_mapping"
-#tracePath = "/Users/bofang/PycharmProjects/PVF/nw/llfi.stat.trace.txt.prof.0"
+#IRpath = "/Users/bofang/Documents/Benchmarks/nw/needle.ll"
+#indexFilePath = "/Users/bofang/Documents/Benchmarks/nw/needle_mapping"
+#tracePath = "/Users/bofang/Documents/Benchmarks/nw/llfi.stat.trace.txt.prof.0"
 #outputDataSet = ['.omp_microtask.9_%arrayidx42','.omp_microtask._%arrayidx40']
-#crashfile = "/Users/bofang/PycharmProjects/PVF/nw/crash"
-#precision_file = "/Users/bofang/PycharmProjects/PVF/nw/precision"
+#crashfile = "/Users/bofang/Documents/Benchmarks/nw/crash"
+#precision_file = "/Users/bofang/Documents/Benchmarks/nw/precision"
 #tid = "18608"
 #Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
+#duplication = "/Users/bofang/Documents/Benchmarks/nw/"
 ### bfs
 #IRpath = "/Users/bofang/PycharmProjects/PVF/bfs/bfs.ll"
 #indexFilePath = "/Users/bofang/PycharmProjects/PVF/bfs/bfs_mapping"
@@ -66,13 +67,14 @@ duplication = "/Users/bofang/Documents/Benchmarks/lavaMD/"
 #gepsize = 8
 
 ### matrix multiplication
-#IRpath = "/Users/bofang/PycharmProjects/PVF/mm/mm.ll"
-#indexFilePath = "/Users/bofang/PycharmProjects/PVF/mm/mm_mapping"
-#tracePath = "/Users/bofang/PycharmProjects/PVF/mm/llfi.stat.trace.txt.prof.0"
-#outputDataSet = ['.omp_microtask._%arrayidx21']
-#Outbound = ['.omp_microtask._%2','.omp_microtask._%0']
-#crashfile = "/Users/bofang/PycharmProjects/PVF/mm/crash"
-#precision_file = "/Users/bofang/PycharmProjects/PVF/mm/precision"
+IRpath = "/Users/bofang/Documents/Benchmarks/mm/mm_small.ll"
+indexFilePath = "/Users/bofang/Documents/Benchmarks/mm/mm_small_mapping"
+tracePath = "/Users/bofang/Documents/Benchmarks/mm/llfi.stat.trace.txt.prof.0"
+outputDataSet = ['.omp_microtask._%arrayidx21']
+Outbound = ['.omp_microtask._%2','.omp_microtask._%0']
+crashfile = "/Users/bofang/Documents/Benchmarks/mm/crash"
+precision_file = "/Users/bofang/Documents/Benchmarks/mm/precision"
+duplication = "/Users/bofang/Documents/Benchmarks/mm/"
 
 ### reduction
 #IRpath = "/Users/bofang/PycharmProjects/PVF/reduction/reduction.ll"
