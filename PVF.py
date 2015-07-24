@@ -22,11 +22,11 @@ finalBits = []
 loadstore = []
 finalBits_control = []
 control_start = 0
-lower_bound = 1
+lower_bound = 0
 f_level = 1
 loadstore_bits = {}
 
-pop = 0.2
+pop = [0.1,0.2,0.3,0.4,0.5]
 K = 1
 
 ranking = {}
@@ -1565,13 +1565,19 @@ class PVF:
         _cycle = int(G.node[node]['cycle'])
         _index = self.cycle_index_lookup[int(G.node[node]['cycle'])]
         ace_inst = 0
+        epvf_inst = 0
         for op in oplist:
             ace_inst += int(G.node[op]['len'])
+        if opcode == "load" or opcode == "store":
+            ace_inst = config.OSbits
+            epvf_inst = ace_inst - removed_ldst
+        else:
+            epvf_inst = bb
         if _index in ranking:
-            ranking[_index].append([_cycle,bb,ace_inst])
+            ranking[_index].append([_cycle,epvf_inst,ace_inst])
         else:
             ranking[_index] = []
-            ranking[_index].append([_cycle,bb,ace_inst])
+            ranking[_index].append([_cycle,epvf_inst,ace_inst])
         #if opcode not in config.memoryInst:
         #    bb += G.node[node]['len']
         #print b
@@ -1941,27 +1947,13 @@ class PVF:
         print (b-ldst-crash-control)
         # generating duplication candidates
         f_full = open(os.path.join(config.duplication,"full_duplication"),"w")
-        f_random = open(os.path.join(config.duplication,"random_duplication"),"w")
-        f_hotpath = open(os.path.join(config.duplication,"hotpath_duplication"),"w")
-        f_epvf = open(os.path.join(config.duplication,"epvf_duplication"),"w")
+
         for item in ranking:
             f_full.write(str(item)+"\n")
         f_full.close()
-        random_list = random.sample(ranking.keys(),int(pop*len(ranking)))
-        for item in random_list:
-            f_random.write(str(item)+"w")
-        f_random.close()
-        hotpath_index = OrderedDict(sorted(ranking.viewitems(), key=lambda x: len(x[1]), reverse=True))
-        count = 0
-        for item in hotpath_index:
-            f_hotpath.write(str(item)+"\n")
-            count += 1
-            if count > int(pop*len(ranking)):
-                break
-        f_hotpath.close()
+        hotpath_index = sorted(ranking.viewitems(), key=lambda x: len(x[1]), reverse=True)
         epvf_dict = {}
-        count = 0
-        for key, value in ranking:
+        for key, value in ranking.items():
             ace = 0
             total = 0
             for i in value:
@@ -1969,13 +1961,30 @@ class PVF:
                 total += i[2]
             epvf = float(ace)/total
             epvf_dict[key] = epvf
-        ordered_epvf_dict = OrderedDict(sorted(epvf_dict.viewitems(), key=lambda x: x[1]),reverse = True)
-        for item in ordered_epvf_dict:
-            f_epvf.write(str(item)+"\n")
-            count += 1
-            if count > len(ranking):
-                break
-        f_epvf.close()
+        ordered_epvf_list = sorted(epvf_dict.viewitems(), key=lambda x: x[1], reverse = True)
+        for i in pop:
+            random_list = random.sample(ranking.keys(),int(i*len(ranking)))
+            f_random = open(os.path.join(config.duplication,"random_duplication"+"_"+str(i)),"w")
+            for item in random_list:
+                f_random.write(str(item)+"w")
+            f_random.close()
+            # generate hotpath index
+            f_hotpath = open(os.path.join(config.duplication,"hotpath_duplication"+"_"+str(i)),"w")
+            count = 0
+            for item in hotpath_index:
+                f_hotpath.write(str(item)+"\n")
+                count += 1
+                if count > int(i*len(ranking)):
+                    break
+            f_hotpath.close()
+            count = 0
+            f_epvf = open(os.path.join(config.duplication,"epvf_duplication"+"_"+str(i)),"w")
+            for item in ordered_epvf_list:
+                f_epvf.write(str(item)+"\n")
+                count += 1
+                if count > int(i*len(ranking)):
+                    break
+            f_epvf.close()
         #self.crashRecall(G,config.crashfile)
 
 

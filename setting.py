@@ -10,14 +10,15 @@
 #Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
 #gepsize = 4
 ### lavaMD
-#IRpath = "/Users/bofang/PycharmProjects/PVF/lavaMD/lavaMD.ll"
-#indexFilePath = "/Users/bofang/PycharmProjects/PVF/lavaMD/lavaMD_mapping"
-#tracePath = "/Users/bofang/PycharmProjects/PVF/lavaMD/llfi.stat.trace.txt.prof.0"
-#outputDataSet = ['.omp_microtask._%v114','.omp_microtask._%x121','.omp_microtask._%y128','.omp_microtask._%z135']
-#crashfile = "/Users/bofang/PycharmProjects/PVF/lavaMD/crash"
-#precision_file = "/Users/bofang/PycharmProjects/PVF/lavaMD/precision"
-#tid = "18608"
-#Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
+IRpath = "/Users/bofang/Documents/Benchmarks/lavaMD/lavaMD.ll"
+indexFilePath = "/Users/bofang/Documents/Benchmarks/lavaMD/lavaMD_mapping"
+tracePath = "/Users/bofang/Documents/Benchmarks/lavaMD/llfi.stat.trace.txt.prof.0"
+outputDataSet = ['.omp_microtask._%v114','.omp_microtask._%x121','.omp_microtask._%y128','.omp_microtask._%z135']
+crashfile = "/Users/bofang/Documents/Benchmarks/lavaMD/crash"
+precision_file = "/Users/bofang/Documents/Benchmarks/lavaMD/precision"
+tid = "18608"
+Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
+duplication = "/Users/bofang/Documents/Benchmarks/lavaMD/"
 
 ### particle
 #IRpath = "/Users/bofang/PycharmProjects/PVF/particle/particle_filter.ll"
@@ -38,14 +39,14 @@
 #recision_file = "/Users/bofang/PycharmProjects/PVF/sc/precision"
 
 ### nw
-IRpath = "/Users/bofang/PycharmProjects/PVF/nw/needle.ll"
-indexFilePath = "/Users/bofang/PycharmProjects/PVF/nw/needle_mapping"
-tracePath = "/Users/bofang/PycharmProjects/PVF/nw/llfi.stat.trace.txt.prof.0"
-outputDataSet = ['.omp_microtask.9_%arrayidx42','.omp_microtask._%arrayidx40']
-crashfile = "/Users/bofang/PycharmProjects/PVF/nw/crash"
-precision_file = "/Users/bofang/PycharmProjects/PVF/nw/precision"
-tid = "18608"
-Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
+#IRpath = "/Users/bofang/PycharmProjects/PVF/nw/needle.ll"
+#indexFilePath = "/Users/bofang/PycharmProjects/PVF/nw/needle_mapping"
+#tracePath = "/Users/bofang/PycharmProjects/PVF/nw/llfi.stat.trace.txt.prof.0"
+#outputDataSet = ['.omp_microtask.9_%arrayidx42','.omp_microtask._%arrayidx40']
+#crashfile = "/Users/bofang/PycharmProjects/PVF/nw/crash"
+#precision_file = "/Users/bofang/PycharmProjects/PVF/nw/precision"
+#tid = "18608"
+#Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
 ### bfs
 #IRpath = "/Users/bofang/PycharmProjects/PVF/bfs/bfs.ll"
 #indexFilePath = "/Users/bofang/PycharmProjects/PVF/bfs/bfs_mapping"

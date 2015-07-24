@@ -202,7 +202,7 @@ class AbstractInst:
                 cycle = res[len(res)-1]
                 res.pop()
                 _index = int(res[0])
-                if res[1] != "2" and res[1] != "44" and res[1] != "26":
+                if res[1] != "2" and res[1] != "48" and res[1] != "26":
                     cycle_index_lookup[int(cycle)] = _index
                 value = copy.deepcopy(inst_map[res[0]])
                 assert isinstance(value, DDGInst)
