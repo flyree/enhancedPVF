@@ -360,7 +360,12 @@ class FunctionMapping:
                     else:
                         if "i" in item1:
                             res = re.findall("[-+]?[0-9]*\.?[0-9]+",item1)
-                            type = int(math.ceil(int(res[0]) / 4.0)) * 4
+                            if len(res) == 0:
+                                type = 0
+                            elif len(res) == 2:
+                                type = int(math.ceil(int(res[1]) / 4.0)) * 4
+                            else:
+                                type = int(math.ceil(int(res[0]) / 4.0)) * 4
                         if "float" in item1:
                             type = 32
                         if "double" in item1:

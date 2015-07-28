@@ -500,8 +500,8 @@ class DDG:
         #G.node['.omp_microtask._%0']['value'] = 140736284336096
         #G.node['.omp_microtask._%2']['value'] = 140736284337168
         #mm
-        G.node['.omp_microtask._%2']['value'] =140736331785136
-        G.node['.omp_microtask._%0']['value'] =140736331784032
+        #G.node['.omp_microtask._%2']['value'] =140736331785136
+        #G.node['.omp_microtask._%0']['value'] =140736331784032
         #nw
         #G.node['.omp_microtask._%0']['value'] = 140737163305440
         #G.node['.omp_microtask._%2']['value'] = 140737163306576
@@ -515,6 +515,11 @@ class DDG:
         #G.node['.omp_microtask._%0']['value'] = 140733990523424
         #G.node['.omp_microtask._%10']['value'] = 0
         #G.node['.omp_microtask._%44']['value'] = 0
+        #lud
+        G.node['.omp_microtask._%0']['value'] = 140735990145888
+        G.node['.omp_microtask._%2']['value'] = 140735990147032
+        G.node['.omp_microtask.1_%2']['value'] = 140735990146960
+        G.node['.omp_microtask.1_%0']['value'] = 140735990145888
         return [G,global_hash_cycle]
 
 print time.time()
