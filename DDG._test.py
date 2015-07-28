@@ -432,7 +432,7 @@ class DDG:
                     else:
                         if op not in G:
                             if ddg_inst.opcode == "and" or ddg_inst.opcode == "or" or ddg_inst.opcode == "shl" or ddg_inst.opcode == "lshr" or ddg_inst.opcode == "ashr":
-                                G.add_node(op, len=itype, size=1, operand0=op, bits=bitwiseRec[self.remap[idx]][2],cycle = ddg_inst.cycle)
+                                G.add_node(op, len=itype, size=1, operand0=op, bits=bitwiseRec[self.remap[idx]][2],cycle = ddg_inst.cycle, value = dest.value)
                                 dest_node.append(op)
                             else:
                                 G.add_node(op, len=itype, size=1, operand0=op, value = dest.value,cycle = ddg_inst.cycle)
@@ -513,6 +513,8 @@ class DDG:
          # sc
         #G.node['.omp_microtask._%2']['value'] = 140735990524520
         #G.node['.omp_microtask._%0']['value'] = 140733990523424
+        #G.node['.omp_microtask._%10']['value'] = 0
+        #G.node['.omp_microtask._%44']['value'] = 0
         return [G,global_hash_cycle]
 
 print time.time()

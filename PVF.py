@@ -1175,6 +1175,54 @@ class PVF:
                 ranking[_index] = []
                 ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
+        if opcode == "shl":
+            cycle = int(G.node[node]['cycle'])
+            _index = self.cycle_index_lookup[cycle]
+            crash_inst = 0
+            ace_inst = 0
+            max_op = min_range >> int(G.node[oplist[1]]['value'])
+            min_op = max_range >> int(G.node[oplist[1]]['value'])
+            if oplist[0] not in rangeList:
+                rangeList[oplist[0]] = []
+                rangeList[oplist[0]].append(max_op)
+                rangeList[oplist[0]].append(min_op)
+            type = G.node[oplist[0]]['len']
+            ace_inst += type
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                crash_tmp = self.checkRange(G, oplist[0], max_op, min_op, type)
+                finalBits.append(crash_tmp)
+                crash_inst += crash_tmp
+            if _index in ranking:
+                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+            else:
+                ranking[_index] = []
+                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+
+        if opcode == "ashr":
+            cycle = int(G.node[node]['cycle'])
+            _index = self.cycle_index_lookup[cycle]
+            crash_inst = 0
+            ace_inst = 0
+            max_op = max_range >> int(G.node[oplist[1]]['value'])
+            min_op = min_range >> int(G.node[oplist[1]]['value'])
+            if oplist[0] not in rangeList:
+                rangeList[oplist[0]] = []
+                rangeList[oplist[0]].append(max_op)
+                rangeList[oplist[0]].append(min_op)
+            type = G.node[oplist[0]]['len']
+            ace_inst += type
+            if int(G.node[oplist[0]]['out_edge']) > 0:
+                G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
+                crash_tmp = self.checkRange(G, oplist[0], max_op, min_op, type)
+                finalBits.append(crash_tmp)
+                crash_inst += crash_tmp
+            if _index in ranking:
+                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+            else:
+                ranking[_index] = []
+                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+
 
     def checkRange(self,G, node, max_f, min_f, type):
         """
@@ -1291,7 +1339,7 @@ class PVF:
                      bb += bin(base).count("1")
             if opcode == "shl" or opcode == "lshr" or opcode == "ashr":
                 size = int(G.node[oplist[0]]['len'])
-                shift = int(G.node[oplist[1]]['value'])
+                #shift = int(G.node[oplist[1]]['value'])
                 bb += math.log(size,2)
             #     pass
             #for op in oplist:
@@ -1785,8 +1833,9 @@ class PVF:
         stack4recursion = []
         stack4recursion.extend(oplist)
         final = 0
-        for op in oplist:
-            final += int(G.node[op]['len'])
+        #for op in oplist:
+        #    final += int(G.node[op]['len'])
+        final = count_1+ count_2
         icmpbits = {}
         icmpbits[count_1] = []
         icmpbits[count_1].append(oplist[0])
@@ -1966,7 +2015,7 @@ class PVF:
             random_list = random.sample(ranking.keys(),int(i*len(ranking)))
             f_random = open(os.path.join(config.duplication,"random_duplication"+"_"+str(i)),"w")
             for item in random_list:
-                f_random.write(str(item)+"w")
+                f_random.write(str(item)+"\n")
             f_random.close()
             # generate hotpath index
             f_hotpath = open(os.path.join(config.duplication,"hotpath_duplication"+"_"+str(i)),"w")

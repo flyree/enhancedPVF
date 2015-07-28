@@ -72,11 +72,13 @@ class AbstractInst:
             outername = ""
             for item in block:
                 item = item.rstrip("\n")
+                if "_ZL12center_table" in item:
+                    print "hhhh"
                 if " -> " in item:
                     inst_key.append(item.split(" -> ")[1])
                 if "Opcode" in item:
                     opcode = item.split(": ")[1]
-                if "name" in item and "Func" not in item:
+                if "name:" in item and "Func" not in item:
                     outername = item.split(" ")[1]
                 if "Source" in item:
                     if item != "Source: null":
