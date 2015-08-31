@@ -39,11 +39,12 @@ def binary_search(a, x, lo=0, hi=None):   # can't use a to specify default for h
 class DDG:
     @classmethod
     def __init__(self, trace):
-        assert(len(trace) == 4)
+        assert(len(trace) == 5)
         self.dynamic_trace = trace[0]
         self.remap = trace[1]
         self.memory = trace[2]
         self.cycle_index_lookup = trace[3]
+        self.index_cycle_lookup = trace[4]
 
     # ##
     # A node can be 1. source 2. dest 3. opcode
@@ -492,21 +493,21 @@ class DDG:
         #G.node['.omp_microtask._%2']['value'] = 140736706954416
         #G.node['.omp_microtask._@no_of_nodes']['value'] = 6312160
         #hotspot
-        #G.node['.omp_microtask._%0']['value'] = 140737436492192
-        #G.node['.omp_microtask._%2']['value'] = 140737436493336
-        #G.node['.omp_microtask.1_%2']['value'] = 140737436492192
-        #G.node['.omp_microtask.1_%0']['value'] = 140737436493264
+        #G.node['.omp_microtask._%0']['value'] = 140735828190880
+        #G.node['.omp_microtask._%2']['value'] = 140735828191976
+        #G.node['.omp_microtask.1_%2']['value'] = 140735828191904
+        #G.node['.omp_microtask.1_%0']['value'] = 140735828190880
         #lavaMD
-        #G.node['.omp_microtask._%0']['value'] = 140736284336096
-        #G.node['.omp_microtask._%2']['value'] = 140736284337168
+        G.node['.omp_microtask._%0']['value'] = 140736284336096
+        G.node['.omp_microtask._%2']['value'] = 140736284337168
         #mm
-        #G.node['.omp_microtask._%2']['value'] =140736331785136
-        #G.node['.omp_microtask._%0']['value'] =140736331784032
+        #G.node['.omp_microtask._%2']['value'] =140736337932744
+        #G.node['.omp_microtask._%0']['value'] =140736337931680
         #nw
-        #G.node['.omp_microtask._%0']['value'] = 140737163305440
-        #G.node['.omp_microtask._%2']['value'] = 140737163306576
-        #G.node['.omp_microtask.9_%2']['value'] = 140737163306480
-        #G.node['.omp_microtask.9_%0']['value'] = 140737163305440
+        #G.node['.omp_microtask._%0']['value'] = 140735298694560
+        #G.node['.omp_microtask._%2']['value'] = 140735298695744
+        #G.node['.omp_microtask.9_%2']['value'] = 140735298695648
+        #G.node['.omp_microtask.9_%0']['value'] = 140735298694560
         # particle
         #G.node['.omp_microtask._%2']['value'] = 140733985371832
         #G.node['.omp_microtask._%0']['value'] = 140733985370592
@@ -516,10 +517,10 @@ class DDG:
         #G.node['.omp_microtask._%10']['value'] = 0
         #G.node['.omp_microtask._%44']['value'] = 0
         #lud
-        G.node['.omp_microtask._%0']['value'] = 140735990145888
-        G.node['.omp_microtask._%2']['value'] = 140735990147032
-        G.node['.omp_microtask.1_%2']['value'] = 140735990146960
-        G.node['.omp_microtask.1_%0']['value'] = 140735990145888
+        #G.node['.omp_microtask._%0']['value'] = 140735990145888
+        #G.node['.omp_microtask._%2']['value'] = 140735990147032
+        #G.node['.omp_microtask.1_%2']['value'] = 140735990146960
+        #G.node['.omp_microtask.1_%0']['value'] = 140735990145888
         return [G,global_hash_cycle]
 
 print time.time()
@@ -529,7 +530,7 @@ ddg = DDG(trace)
 [G,global_hash_cycle] = ddg.ddg_construct(ddg.dynamic_trace, a.memcpyRec, a.bitwiseRec)
 #nx.draw_random(G)
 #nx.write_dot(G, "./test.dot")
-pvf_res = pvf.PVF(G, trace, indexMap, global_hash_cycle,ddg.cycle_index_lookup)
+pvf_res = pvf.PVF(G, trace, indexMap, global_hash_cycle,ddg.cycle_index_lookup, ddg.index_cycle_lookup)
 subG = pvf_res.computePVF(config.outputDataSet)
 #pvf_res.computeCrashRate()
 print time.time()

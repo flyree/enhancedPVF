@@ -26,7 +26,7 @@ lower_bound = 0
 f_level = 1
 loadstore_bits = {}
 
-pop = [0.1,0.2,0.3,0.4,0.5]
+pop = [1]
 K = 1
 
 ranking = {}
@@ -119,15 +119,33 @@ def iszero(x):
         return False
 
 
+def removeDuCycle(ranking, ref):
+    for key, value in ranking.items():
+        cycles = ref[key]
+        for cycle in cycles:
+            min = sys.maxint
+            for item in value:
+                if int(cycle) == int(item[0]):
+                    if int(item[1]) < min:
+                        min = int(item[1])
+            ranking[key][:] = [tup for tup in ranking[key] if (int(tup[0]) == int(cycle) and int(tup[1]) == min) or int(tup[0]) != int(cycle)]
+            #    if int(cycle) == int(item[0]) and int(item[1]) == min:
+            #        pass
+            #    if int(cycle) == int(item[0]) and int(item[1]) != min:
+            #        ranking[key].remove(item)
+
+
+
+
 def grouper(n, iterable, fillvalue=None):
     "grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"
     args = [iter(iterable)] * n
     return izip_longest(fillvalue=fillvalue, *args)
 
 class PVF:
-    def __init__(self, G, trace, indexMap,global_hash_cycle, cycle_index_lookup):
+    def __init__(self, G, trace, indexMap,global_hash_cycle, cycle_index_lookup, index_cycle_lookup):
         self.G = G
-        assert(len(trace) == 4)
+        assert(len(trace) == 5)
         self.trace = trace[0]
         self.remap = trace[1]
         self.memory = trace[2]
@@ -137,6 +155,7 @@ class PVF:
         self.indexMap = indexMap
         self.global_hash_cycle = global_hash_cycle
         self.cycle_index_lookup = cycle_index_lookup
+        self.index_cycle_lookup = index_cycle_lookup
 
     def ordered_subset_bycycle(self, iterator,K):
         unordered = {}
@@ -657,6 +676,7 @@ class PVF:
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             for i in range(2):
                     max_op = max_range - int(G.node[oplist[1-i]]['value'])
                     min_op = min_range - int(G.node[oplist[1-i]]['value'])
@@ -672,11 +692,13 @@ class PVF:
                         crash_tmp = self.checkRange(G,oplist[i],max_op, min_op, type)
                         finalBits.append(crash_tmp)
                         crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                        flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
 
         if opcode == "sub" or opcode == "fsub":
@@ -684,6 +706,7 @@ class PVF:
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             assert(len(oplist) == 2)
             # the first operand
             max_op = max_range + int(G.node[oplist[1]]['value'])
@@ -700,6 +723,7 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0],max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
+                flag += 1
             max_op = int(G.node[oplist[0]]['value']) - min_range
             min_op = int(G.node[oplist[0]]['value']) - max_range
             if oplist[1] not in rangeList:
@@ -714,17 +738,20 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[1],max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "fmul" or opcode == "mul":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             assert(len(oplist) == 2)
             for i in range(2):
                     if int(G.node[oplist[1-i]]['value']) == 0:
@@ -745,17 +772,20 @@ class PVF:
                         crash_tmp = self.checkRange(G,oplist[i],max_op, min_op, type)
                         finalBits.append(crash_tmp)
                         crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                        flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "udiv"  or opcode == "sdiv" or opcode == "fdiv":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             assert(len(oplist) == 2)
             # the first operand
             max_op = max_range*int(G.node[oplist[1]]['value'])
@@ -772,6 +802,7 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0] ,max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
+                flag += 1
             max_op = int(G.node[oplist[0]]['value'])/min_range
             min_op = int(G.node[oplist[0]]['value'])/max_range
             if oplist[1] not in rangeList:
@@ -786,19 +817,24 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[1] ,max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "sext":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             max_op = max_range
             min_op = min_range
+            if _index == 1013:
+                print "!!!"
             if oplist[0] not in rangeList:
                 rangeList[oplist[0]] = []
                 rangeList[oplist[0]].append(max_op)
@@ -810,11 +846,13 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0],max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "phi":
             max_op = max_range
@@ -831,6 +869,7 @@ class PVF:
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             max_op = max_range
             min_op = min_range
             if oplist[0] not in rangeList:
@@ -844,17 +883,20 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0] ,max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "srem":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             assert(len(oplist) == 2)
             type = int(G.node[oplist[0]]['len'])
             value = int(G.node[oplist[0]]['value'])
@@ -869,7 +911,10 @@ class PVF:
             rangeList[oplist[0]].append(min(tmp))
             if int(G.node[oplist[0]]['out_edge']) > 0:
                 G.node[oplist[0]]['out_edge'] = int(G.node[oplist[0]]['out_edge']) -1
-                finalBits.append(self.checkRange(G, oplist[0] ,max(tmp), min(tmp), type))
+                crash_tmp = self.checkRange(G, oplist[0] ,max(tmp), min(tmp), type)
+                finalBits.append(crash_tmp)
+                crash_inst += crash_tmp
+                flag += 1
             type = int(G.node[oplist[1]]['len'])
             ace_inst += type
             value = int(G.node[oplist[1]]['value'])
@@ -889,17 +934,20 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[1] ,max(tmp), min(tmp), type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "getelementptr":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             if len(oplist) == 2:
                 if "realTy" in G.node[oplist[0]]:
                     size = G.node[oplist[0]]['realTy']
@@ -918,6 +966,7 @@ class PVF:
                         crash_tmp = self.checkRange(G, oplist[0],max_op, min_op, type)
                         finalBits.append(crash_tmp)
                         crash_inst += crash_tmp
+                        flag += 1
                     max_op = (max_range - int(G.node[oplist[0]]['value']))*8/int(size)
                     min_op = (min_range - int(G.node[oplist[0]]['value']))*8/int(size)
                     if oplist[1] not in rangeList:
@@ -932,11 +981,13 @@ class PVF:
                         crash_tmp = self.checkRange(G, oplist[1] ,max_op, min_op, type)
                         finalBits.append(crash_tmp)
                         crash_inst += crash_tmp
-                    if _index in ranking:
-                        ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-                    else:
-                        ranking[_index] = []
-                        ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                        flag += 1
+                    if flag > 0:
+                        if _index in ranking:
+                            ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                        else:
+                            ranking[_index] = []
+                            ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
             if len(oplist) == 3:
                 if "realTy" in G.node[oplist[0]]:
@@ -968,6 +1019,7 @@ class PVF:
                             crash_tmp = self.checkRange(G, oplist[0] ,max_op, min_op, type)
                             finalBits.append(crash_tmp)
                             crash_inst += crash_tmp
+                            flag += 1
                         max_op = (max_range - int(G.node[oplist[0]]['value']) - int(t/8))*8/int(size)
                         min_op = (min_range - int(G.node[oplist[0]]['value']) - int(t/8))*8/int(size)
                         if oplist[1] not in rangeList:
@@ -982,6 +1034,7 @@ class PVF:
                             crash_tmp = self.checkRange(G, oplist[1],max_op, min_op, type)
                             finalBits.append(crash_tmp)
                             crash_inst += crash_tmp
+                            flag += 1
                         max_op = (max_range - int(G.node[oplist[0]]['value']) - int(G.node[oplist[1]]['value'])*int(size))/8
                         min_op = (min_range - int(G.node[oplist[0]]['value']) - int(G.node[oplist[1]]['value'])*int(size))/8
                         if oplist[2] not in rangeList:
@@ -996,11 +1049,13 @@ class PVF:
                             crash_tmp = self.checkRange(G, oplist[2],max_op, min_op, type)
                             finalBits.append(crash_tmp)
                             crash_inst += crash_tmp
-                        if _index in ranking:
-                            ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-                        else:
-                            ranking[_index] = []
-                            ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                            flag += 1
+                        if flag > 0:
+                            if _index in ranking:
+                                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                            else:
+                                ranking[_index] = []
+                                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
                     if "elementTy" in G.node[oplist[0]]:
                         element = G.node[oplist[0]]['elementTy']
@@ -1019,6 +1074,7 @@ class PVF:
                             crash_tmp = self.checkRange(G, oplist[0],max_op, min_op, type)
                             finalBits.append(crash_tmp)
                             crash_inst += crash_tmp
+                            flag += 1
                         max_op = (max_range - int(G.node[oplist[0]]['value']) - t)/int(size)
                         min_op = (min_range - int(G.node[oplist[0]]['value']) - t)/int(size)
                         if oplist[1] not in rangeList:
@@ -1033,6 +1089,7 @@ class PVF:
                             crash_tmp = self.checkRange(G,oplist[1],max_op, min_op, type)
                             finalBits.append(crash_tmp)
                             crash_inst += crash_tmp
+                            flag += 1
                         max_op = (max_range - int(G.node[oplist[0]]['value']) - int(G.node[oplist[1]]['value'])*int(size))/int(int(element)/8)
                         min_op = (min_range - int(G.node[oplist[0]]['value']) - int(G.node[oplist[1]]['value'])*int(size))/int(int(element)/8)
                         if oplist[2] not in rangeList:
@@ -1047,17 +1104,20 @@ class PVF:
                             crash_tmp = self.checkRange(G, oplist[2],max_op, min_op, type)
                             finalBits.append(crash_tmp)
                             crash_inst += crash_tmp
-                        if _index in ranking:
-                            ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-                        else:
-                            ranking[_index] = []
-                            ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                            flag += 1
+                        if flag > 0:
+                            if _index in ranking:
+                                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                            else:
+                                ranking[_index] = []
+                                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
 
 
         if opcode == "bitcast":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
+            flag = 0
             crash_inst = 0
             ace_inst = 0
             max_op = max_range
@@ -1073,17 +1133,20 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0], max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "alloca":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             max_op = max_range
             min_op = min_range
             if oplist[0] not in rangeList:
@@ -1097,11 +1160,13 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0], max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "call":
             cycle = int(G.node[node]['cycle'])
@@ -1110,6 +1175,7 @@ class PVF:
             ace_inst = 0
             max_op = max_range
             min_op = min_range
+            flag = 0
             if oplist[0] not in rangeList:
                 rangeList[oplist[0]] = []
                 rangeList[oplist[0]].append(max_op)
@@ -1121,17 +1187,20 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0], max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "fptosi":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             max_op = max_range
             min_op = min_range
             if oplist[0] not in rangeList:
@@ -1145,17 +1214,20 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0], max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "sitofp":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             max_op = max_range
             min_op = min_range
             if oplist[0] not in rangeList:
@@ -1169,17 +1241,20 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0], max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "shl":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             max_op = min_range >> int(G.node[oplist[1]]['value'])
             min_op = max_range >> int(G.node[oplist[1]]['value'])
             if oplist[0] not in rangeList:
@@ -1193,17 +1268,20 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0], max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
         if opcode == "ashr":
             cycle = int(G.node[node]['cycle'])
             _index = self.cycle_index_lookup[cycle]
             crash_inst = 0
             ace_inst = 0
+            flag = 0
             max_op = max_range >> int(G.node[oplist[1]]['value'])
             min_op = min_range >> int(G.node[oplist[1]]['value'])
             if oplist[0] not in rangeList:
@@ -1217,11 +1295,13 @@ class PVF:
                 crash_tmp = self.checkRange(G, oplist[0], max_op, min_op, type)
                 finalBits.append(crash_tmp)
                 crash_inst += crash_tmp
-            if _index in ranking:
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
-            else:
-                ranking[_index] = []
-                ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                flag += 1
+            if flag > 0:
+                if _index in ranking:
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
+                else:
+                    ranking[_index] = []
+                    ranking[_index].append([cycle,ace_inst-crash_inst,ace_inst])
 
 
     def checkRange(self,G, node, max_f, min_f, type):
@@ -1996,39 +2076,65 @@ class PVF:
         print (b-ldst-crash-control)
         # generating duplication candidates
         f_full = open(os.path.join(config.duplication,"full_duplication"),"w")
-
-        for item in ranking:
+        #for key, value in ranking.items():
+        #    print key
+        #    print value
+        removeDuCycle(ranking,self.index_cycle_lookup)
+        #for key, value in ranking.items():
+        #    print key
+        #    print value
+        for item in self.index_cycle_lookup:
             f_full.write(str(item)+"\n")
         f_full.close()
-        hotpath_index = sorted(ranking.viewitems(), key=lambda x: len(x[1]), reverse=True)
+        hotpath_index = sorted(self.index_cycle_lookup, key=lambda x: len(self.index_cycle_lookup[x]), reverse=True)
         epvf_dict = {}
+        epvf_dict_geometric = {}
+        # remove the ones that have much less dynamic instructions
+        dominate_index = sorted(ranking, key=lambda x: len(ranking[x]))
+        #print dominate_index
+        del dominate_index[-(int(len(dominate_index)*0.7)):]
+        #print dominate_index
+        #print len(ranking)
+        for index in dominate_index:
+            ranking.pop(index,None)
+        #print len(ranking)
         for key, value in ranking.items():
-            ace = 0
-            total = 0
+            mean = []
             for i in value:
-                ace += i[1]
-                total += i[2]
-            epvf = float(ace)/total
-            epvf_dict[key] = epvf
+                if int(i[2]) == 0:
+                    pass
+                else:
+                    mean.append(float(i[1])/i[2])
+            epvf_dict[key] = float(sum(mean)/len(mean))
+            epvf_dict_geometric[key] = (reduce(lambda x, y: x*y, mean))**(1.0/len(mean))
+        #print epvf_dict
         ordered_epvf_list = sorted(epvf_dict.viewitems(), key=lambda x: x[1], reverse = True)
+        ordered_epvf_geo_list = sorted(epvf_dict_geometric.viewitems(), key=lambda x: x[1], reverse = True)
+        #print ordered_epvf_geo_list
         for i in pop:
-            random_list = random.sample(ranking.keys(),int(i*len(ranking)))
-            f_random = open(os.path.join(config.duplication,"random_duplication"+"_"+str(i)),"w")
-            for item in random_list:
-                f_random.write(str(item)+"\n")
-            f_random.close()
+            #random_list = random.sample(ranking.keys(),int(i*len(ranking)))
+            #f_random = open(os.path.join(config.duplication,"random_duplication"+"_"+str(i)),"w")
+            #for item in random_list:
+            #    f_random.write(str(item)+"\n")
+            #f_random.close()
             # generate hotpath index
             f_hotpath = open(os.path.join(config.duplication,"hotpath_duplication"+"_"+str(i)),"w")
             count = 0
             for item in hotpath_index:
-                f_hotpath.write(str(item[0])+"\n")
+                f_hotpath.write(str(item)+"\n")
                 count += 1
-                if count > int(i*len(ranking)):
-                    break
             f_hotpath.close()
             count = 0
             f_epvf = open(os.path.join(config.duplication,"epvf_duplication"+"_"+str(i)),"w")
             for item in ordered_epvf_list:
+                f_epvf.write(str(item[0])+"\n")
+                count += 1
+                if count > int(i*len(ranking)):
+                    break
+            f_epvf.close()
+            f_epvf = open(os.path.join(config.duplication,"epvf_duplication"+"_"+str(i)+"_geo"),"w")
+            count = 0
+            for item in ordered_epvf_geo_list:
                 f_epvf.write(str(item[0])+"\n")
                 count += 1
                 if count > int(i*len(ranking)):

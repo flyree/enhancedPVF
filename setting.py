@@ -1,24 +1,25 @@
 
 #### pathfinder
-#IRpath = "/Users/bofang/PycharmProjects/PVF/pathfinder/pathfinder.ll"
-#indexFilePath = "/Users/bofang/PycharmProjects/PVF/pathfinder/pathfinder_mapping"
-#tracePath = "/Users/bofang/PycharmProjects/PVF/pathfinder/llfi.stat.trace.txt.prof.0"
+#IRpath = "/Users/bofang/Documents/Benchmarks/pathfinder/pathfinder.ll"
+#indexFilePath = "/Users/bofang/Documents/Benchmarks/pathfinder/pathfinder_mapping"
+#tracePath = "/Users/bofang/Documents/Benchmarks/pathfinder/llfi.stat.trace.txt.prof.0"
 #outputDataSet = ['.omp_microtask._%arrayidx46']
-#crashfile = "/Users/bofang/PycharmProjects/PVF/pathfinder/crash"
-#precision_file = "/Users/bofang/PycharmProjects/PVF/pathfinder/precision"
+#crashfile = "/Users/bofang/Documents/Benchmarks/pathfinder/crash"
+#precision_file = "/Users/bofang/Documents/Benchmarks/pathfinder/precision"
 #tid = "18608"
 #Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
+#duplication = "/Users/bofang/Documents/Benchmarks/pathfinder"
 #gepsize = 4
 ### lavaMD
-#IRpath = "/Users/bofang/Documents/Benchmarks/lavaMD/lavaMD.ll"
-#indexFilePath = "/Users/bofang/Documents/Benchmarks/lavaMD/lavaMD_mapping"
-#tracePath = "/Users/bofang/Documents/Benchmarks/lavaMD/llfi.stat.trace.txt.prof.0"
-#outputDataSet = ['.omp_microtask._%v114','.omp_microtask._%x121','.omp_microtask._%y128','.omp_microtask._%z135']
-#crashfile = "/Users/bofang/Documents/Benchmarks/lavaMD/crash"
-#precision_file = "/Users/bofang/Documents/Benchmarks/lavaMD/precision"
-#tid = "18608"
-#Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
-#duplication = "/Users/bofang/Documents/Benchmarks/lavaMD/"
+IRpath = "/Users/bofang/Documents/Benchmarks/lavaMD/lavaMD.ll"
+indexFilePath = "/Users/bofang/Documents/Benchmarks/lavaMD/lavaMD_mapping"
+tracePath = "/Users/bofang/Documents/Benchmarks/lavaMD/llfi.stat.trace.txt.prof.0"
+outputDataSet = ['.omp_microtask._%v114','.omp_microtask._%x121','.omp_microtask._%y128','.omp_microtask._%z135']
+crashfile = "/Users/bofang/Documents/Benchmarks/lavaMD/crash"
+precision_file = "/Users/bofang/Documents/Benchmarks/lavaMD/precision"
+tid = "18608"
+Outbound = ['.omp_microtask._@wall','.omp_microtask._@cols']
+duplication = "/Users/bofang/Documents/Benchmarks/lavaMD/"
 
 ### particle
 #IRpath = "/Users/bofang/PycharmProjects/PVF/particle/particle_filter.ll"
@@ -30,13 +31,14 @@
 #precision_file = "/Users/bofang/PycharmProjects/PVF/particle/precision"
 
 ### sc
-#IRpath = "/Users/bofang/PycharmProjects/PVF/sc/sc_omp.ll"
-#indexFilePath = "/Users/bofang/PycharmProjects/PVF/sc/mapping_sc"
-#tracePath = "/Users/bofang/PycharmProjects/PVF/sc/llfi.stat.trace.txt.prof.0"
+#IRpath = "/Users/bofang/Documents/Benchmarks/sc/sc_omp.ll"
+#indexFilePath = "/Users/bofang/Documents/Benchmarks/sc/mapping_sc"
+#tracePath = "/Users/bofang/Documents/Benchmarks/sc/llfi.stat.trace.txt.prof.1"
 #outputDataSet = ['.omp_microtask._%assign49']
 #Outbound = ['.omp_microtask._%2','.omp_microtask._%0']
-#crashfile = "/Users/bofang/PycharmProjects/PVF/sc/crash"
-#recision_file = "/Users/bofang/PycharmProjects/PVF/sc/precision"
+#crashfile = "/Users/bofang/Documents/Benchmarks/sc/crash"
+#precision_file = "/Users/bofang/Documents/Benchmarks/sc/precision"
+#duplication = "/Users/bofang/Documents/Benchmarks/sc"
 
 ### nw
 #IRpath = "/Users/bofang/Documents/Benchmarks/nw/needle.ll"
@@ -57,24 +59,25 @@
 #tid = "23923"
 
 ### hotspot
-#IRpath = "/Users/bofang/PycharmProjects/PVF/hotspot/hotspot.ll"
-#indexFilePath = "/Users/bofang/PycharmProjects/PVF/hotspot/hotspot_mapping"
-#tracePath = "/Users/bofang/PycharmProjects/PVF/hotspot/llfi.stat.trace.txt.prof.0"
+#IRpath = "/Users/bofang/Documents/Benchmarks/hotspot/hotspot.ll"
+#indexFilePath = "/Users/bofang/Documents/Benchmarks/hotspot/hotspot_mapping"
+#tracePath = "/Users/bofang/Documents/Benchmarks/hotspot/llfi.stat.trace.txt.prof.0"
 #outputDataSet = ['.omp_microtask.1_%arrayidx22']
 #Outbound = ['.omp_microtask._%0','.omp_microtask._%2', '.omp_microtask.1_%0','.omp_microtask.1_%2']
-#precision_file = "/Users/bofang/PycharmProjects/PVF/hotspot/precision"
+#precision_file = "/Users/bofang/Documents/Benchmarks/hotspot/precision"
 #tid = "2909"
 #gepsize = 8
+#duplication = "/Users/bofang/Documents/Benchmarks/hotspot/"
 
 ### matrix multiplication
-IRpath = "/Users/bofang/Documents/Benchmarks/mm/mm_small.ll"
-indexFilePath = "/Users/bofang/Documents/Benchmarks/mm/mm_small_mapping"
-tracePath = "/Users/bofang/Documents/Benchmarks/mm/llfi.stat.trace.txt.prof.0"
-outputDataSet = ['.omp_microtask._%arrayidx21']
-Outbound = ['.omp_microtask._%2','.omp_microtask._%0']
-crashfile = "/Users/bofang/Documents/Benchmarks/mm/crash"
-precision_file = "/Users/bofang/Documents/Benchmarks/mm/precision"
-duplication = "/Users/bofang/Documents/Benchmarks/mm/"
+#IRpath = "/Users/bofang/Documents/Benchmarks/mm/mm.ll"
+#indexFilePath = "/Users/bofang/Documents/Benchmarks/mm/mm_small_mapping"
+#tracePath = "/Users/bofang/Documents/Benchmarks/mm/llfi.stat.trace.txt.prof.0"
+#outputDataSet = ['.omp_microtask._%arrayidx21']
+#Outbound = ['.omp_microtask._%2','.omp_microtask._%0']
+#crashfile = "/Users/bofang/Documents/Benchmarks/mm/crash"
+#precision_file = "/Users/bofang/Documents/Benchmarks/mm/precision"
+#duplication = "/Users/bofang/Documents/Benchmarks/mm/"
 
 ### reduction
 #IRpath = "/Users/bofang/PycharmProjects/PVF/reduction/reduction.ll"
@@ -83,6 +86,16 @@ duplication = "/Users/bofang/Documents/Benchmarks/mm/"
 #outputDataSet = ['.omp_microtask._%arrayidx']
 #Outbound = ['.omp_microtask._%2']
 #tid = "8819"
+
+### lud
+#IRpath = "/Users/bofang/Documents/Benchmarks/lud/lud_omp.ll"
+#indexFilePath = "/Users/bofang/Documents/Benchmarks/lud/lud_omp_mapping"
+#tracePath = "/Users/bofang/Documents/Benchmarks/lud/llfi.stat.trace.txt.prof.0"
+#outputDataSet = ['.omp_microtask._%arrayidx42','.omp_microtask.1_%arrayidx54']
+#Outbound = ['.omp_microtask._%2','.omp_microtask._%0','.omp_microtask.1_%2',".omp_microtask.1_%0"]
+#crashfile = "/Users/bofang/Documents/Benchmarks/lud/crash"
+#precision_file = "/Users/bofang/Documents/Benchmarks/lud/precision"
+#duplication = "/Users/bofang/Documents/Benchmarks/lud"
 
 #-------------
 # instructions
