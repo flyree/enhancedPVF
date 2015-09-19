@@ -490,16 +490,19 @@ class DDG:
         #G.node['.omp_microtask._@cols']['value'] = 6312196
         #G.node['.omp_microtask._%2']['value'] = 140733683466480
         #bfs
-        #G.node['.omp_microtask._%2']['value'] = 140736706954416
-        #G.node['.omp_microtask._@no_of_nodes']['value'] = 6312160
+        G.node['.omp_microtask._%2']['value'] = 140736706954416
+        G.node['.omp_microtask._@no_of_nodes']['value'] = 6312160
         #hotspot
         #G.node['.omp_microtask._%0']['value'] = 140735828190880
         #G.node['.omp_microtask._%2']['value'] = 140735828191976
         #G.node['.omp_microtask.1_%2']['value'] = 140735828191904
         #G.node['.omp_microtask.1_%0']['value'] = 140735828190880
+        #particlefilter
+        #G.node['.omp_microtask._%2']['value'] = 140733985371832
+        #G.node['.omp_microtask._%0']['value'] = 140733985370592
         #lavaMD
-        G.node['.omp_microtask._%0']['value'] = 140736284336096
-        G.node['.omp_microtask._%2']['value'] = 140736284337168
+        #G.node['.omp_microtask._%0']['value'] = 140736284336096
+        #G.node['.omp_microtask._%2']['value'] = 140736284337168
         #mm
         #G.node['.omp_microtask._%2']['value'] =140736337932744
         #G.node['.omp_microtask._%0']['value'] =140736337931680
@@ -521,6 +524,11 @@ class DDG:
         #G.node['.omp_microtask._%2']['value'] = 140735990147032
         #G.node['.omp_microtask.1_%2']['value'] = 140735990146960
         #G.node['.omp_microtask.1_%0']['value'] = 140735990145888
+        #srad
+        #G.node['.omp_microtask._%0']['value'] = 140737348048224
+        #G.node['.omp_microtask._%2']['value'] = 140737348049544
+        #G.node['.omp_microtask.12_%2']['value'] = 140737348049368
+        #G.node['.omp_microtask.12_%0']['value'] = 140737348048224
         return [G,global_hash_cycle]
 
 print time.time()

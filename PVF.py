@@ -27,9 +27,10 @@ f_level = 1
 loadstore_bits = {}
 
 pop = [1]
-K = 1
+K = 0.3
 
 ranking = {}
+ranking_pvf = {}
 
 def random_subset(iterator, K):
     result = []
@@ -299,8 +300,8 @@ class PVF:
         print len(predecessors_control)
         #No need for selecting
         #print predecessors_memory
-        #predecessors_memory = self.ordered_subset_bycycle(predecessors_memory,K)
-        #predecessors_control = self.ordered_subset_bycycle(predecessors_control,K)
+        predecessors_memory = self.ordered_subset_bycycle(predecessors_memory,K)
+        predecessors_control = self.ordered_subset_bycycle(predecessors_control,K)
         #print predecessors_memory
         #print "TEST"
         #print len(predecessors_memory)
@@ -1694,18 +1695,29 @@ class PVF:
         _index = self.cycle_index_lookup[int(G.node[node]['cycle'])]
         ace_inst = 0
         epvf_inst = 0
+        pvf_inst = 0
         for op in oplist:
             ace_inst += int(G.node[op]['len'])
+        pvf_ace = ace_inst
         if opcode == "load" or opcode == "store":
             ace_inst = config.OSbits
             epvf_inst = ace_inst - removed_ldst
+            pvf_inst = config.OSbits
+            pvf_ace = config.OSbits
         else:
             epvf_inst = bb
+            pvf_inst = bb
         if _index in ranking:
             ranking[_index].append([_cycle,epvf_inst,ace_inst])
         else:
             ranking[_index] = []
             ranking[_index].append([_cycle,epvf_inst,ace_inst])
+        if _index in ranking_pvf:
+            ranking_pvf[_index].append([_cycle,pvf_inst,pvf_ace])
+        else:
+            ranking_pvf[_index] = []
+            ranking_pvf[_index].append([_cycle,pvf_inst,pvf_ace])
+
         #if opcode not in config.memoryInst:
         #    bb += G.node[node]['len']
         #print b
@@ -2079,20 +2091,46 @@ class PVF:
         #for key, value in ranking.items():
         #    print key
         #    print value
-        removeDuCycle(ranking,self.index_cycle_lookup)
+        #removeDuCycle(ranking,self.index_cycle_lookup)
+        removeDuCycle(ranking_pvf,self.index_cycle_lookup)
         #for key, value in ranking.items():
         #    print key
         #    print value
-        for item in self.index_cycle_lookup:
-            f_full.write(str(item)+"\n")
-        f_full.close()
+        ########## DONT WRITE FILE FOR NOW ############
+        #for item in self.index_cycle_lookup:
+        #    f_full.write(str(item)+"\n")
+        #f_full.close()
         hotpath_index = sorted(self.index_cycle_lookup, key=lambda x: len(self.index_cycle_lookup[x]), reverse=True)
         epvf_dict = {}
         epvf_dict_geometric = {}
+        pvf_dict = {}
+        #print ranking_pvf
+        for key, value in ranking_pvf.items():
+            #print key
+            #print value
+            mean = []
+            for i in value:
+                if int(i[2]) == 0:
+                    pass
+                else:
+                    mean.append(float(i[1])/i[2])
+            pvf_dict[key] = float(sum(mean)/len(mean))
+        for key, value in ranking.items():
+            mean = []
+            for i in value:
+                if int(i[2]) == 0:
+                    pass
+                else:
+                    mean.append(float(i[1])/i[2])
+            epvf_dict[key] = float(sum(mean)/len(mean))
+        #plot cdf
+        #print epvf_dict.values()
+        #print pvf_dict.values()
+        epvf_dict = {}
         # remove the ones that have much less dynamic instructions
         dominate_index = sorted(ranking, key=lambda x: len(ranking[x]))
         #print dominate_index
-        del dominate_index[-(int(len(dominate_index)*0.7)):]
+        del dominate_index[-(int(len(dominate_index)*0.85)):]
         #print dominate_index
         #print len(ranking)
         for index in dominate_index:
@@ -2111,6 +2149,8 @@ class PVF:
         ordered_epvf_list = sorted(epvf_dict.viewitems(), key=lambda x: x[1], reverse = True)
         ordered_epvf_geo_list = sorted(epvf_dict_geometric.viewitems(), key=lambda x: x[1], reverse = True)
         #print ordered_epvf_geo_list
+        ########## DONT WRITE FILE FOR NOW ############
+        '''
         for i in pop:
             #random_list = random.sample(ranking.keys(),int(i*len(ranking)))
             #f_random = open(os.path.join(config.duplication,"random_duplication"+"_"+str(i)),"w")
@@ -2140,6 +2180,7 @@ class PVF:
                 if count > int(i*len(ranking)):
                     break
             f_epvf.close()
+        '''
         #self.crashRecall(G,config.crashfile)
 
 
